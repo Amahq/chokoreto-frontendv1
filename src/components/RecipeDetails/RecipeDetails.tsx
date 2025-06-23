@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { RecipeHeader, ComponentList, AddComponentForm, CostCalculator } from "@/components/RecipeDetails";
+import { RecipeHeader, ComponentList, AddComponentForm, CostCalculator } from "../../components/RecipeDetails";
 import type { RecipeData, MaterialCost, Material, RecipeRef } from "@/components/RecipeDetails";
+import RecipeHeaderEditor from "./RecipeHeaderEditor";
+
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -26,7 +28,7 @@ export default function RecipeDetails() {
 
   const fetchRecipe = async () => {
     try {
-      const res = await fetch(\`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/\${id}\`);
+const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`);
       const data = await res.json();
       setRecipe(data);
       setEditedName(data.name);
@@ -44,7 +46,7 @@ export default function RecipeDetails() {
         const [mRes, rRes, dRes] = await Promise.all([
           fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials?all=true"),
           fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes?all=true"),
-          fetch(\`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/\${id}\`)
+fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`)
         ]);
         const [mData, rData, dData] = await Promise.all([mRes.json(), rRes.json(), dRes.json()]);
         setMaterials(mData);
@@ -66,7 +68,7 @@ export default function RecipeDetails() {
     const fetchCost = async () => {
       if (!id || isNaN(Number(costQty))) return;
       try {
-        const res = await fetch(\`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/\${id}/cost?qty=\${costQty}\`);
+const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}/cost?qty=${costQty}`);
         const data = await res.json();
         if (!data.error) {
           setMaterialCosts(data.materials);
@@ -110,7 +112,7 @@ export default function RecipeDetails() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={async () => {
-                  const res = await fetch(\`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/\${id}\`, {
+const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

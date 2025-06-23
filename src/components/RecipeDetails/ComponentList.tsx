@@ -18,7 +18,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const saveEdit = async (comp: Component) => {
-    await fetch(\`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/\${recipeId}/components\`, {
+await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${recipeId}/components`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -31,8 +31,8 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const handleDelete = async (comp: Component) => {
-    if (!window.confirm(\`¿Eliminar \${comp.name}?\`)) return;
-    await fetch(\`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/\${recipeId}/components?component_id=\${comp.id}\`, {
+if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
+await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${recipeId}/components?component_id=${comp.id}`, {
       method: "DELETE"
     });
     onChange();
@@ -42,7 +42,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
     return list.map((comp, index) => {
       const isEditing = editingId === comp.id;
       return (
-        <li key={\`\${comp.type}-\${index}\`} className="mb-2">
+<li key={`${comp.type}-${index}`} className="mb-2">
           <div className="flex justify-between items-center">
             <div>
               {comp.type === "material" ? (
@@ -55,12 +55,12 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
                       className="border p-1 w-20 mx-2"
                     />
                   ) : (
-                    \`\${comp.quantity} \${comp.unit}\`
+                    `${comp.quantity} ${comp.unit}`
                   )}
                 </>
               ) : (
                 <>
-                  📦 <Link to={\`/recipes/\${comp.id}\`} className="text-pink-600 hover:underline font-semibold">
+                  📦 <Link to={`/recipes/${comp.id}`} className="text-pink-600 hover:underline font-semibold">
                     {comp.name}
                   </Link> (x{isEditing ? (
                     <input

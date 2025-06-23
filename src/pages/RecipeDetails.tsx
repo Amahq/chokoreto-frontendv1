@@ -1,1 +1,1 @@
-export { default } from "@/components/RecipeDetails/RecipeDetails";
+export { default } from "../components/RecipeDetails/RecipeDetails";
