@@ -76,19 +76,6 @@ export default function RecipeDetails() {
   const [newRecipeYield, setNewRecipeYield] = useState("1");
   const [newRecipeProcedure, setNewRecipeProcedure] = useState("");
 
-  const [editingComponentId, setEditingComponentId] = useState<number | null>(null);
-  const [newQty, setNewQty] = useState<number>(0);
-
-  const fetchRecipe = async () => {
-    try {
-      const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`);
-      const data = await res.json();
-      setRecipe(data);
-    } catch (err: any) {
-      setError("Error al recargar la receta: " + err.message);
-    }
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -137,36 +124,6 @@ export default function RecipeDetails() {
     setShowNewComponentForm(searchTerm.length > 2 && matches.length === 0);
   }, [searchTerm, componentType, materials, recipes]);
 
-  const handleEdit = (comp: Component) => {
-    setEditingComponentId(comp.id);
-    setNewQty(comp.quantity);
-  };
-
-  const saveEdit = async (comp: Component) => {
-    if (!id) return;
-    await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${id}/components`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        component_id: comp.id,
-        quantity: newQty
-      })
-    });
-    setEditingComponentId(null);
-    fetchRecipe();
-  };
-
-  const handleDelete = async (comp: Component) => {
-    if (!id) return;
-    const confirmDelete = window.confirm(`¿Eliminar ${comp.name}?`);
-    if (!confirmDelete) return;
-
-    await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${id}/components?component_id=${comp.id}`, {
-      method: "DELETE",
-    });
-    fetchRecipe();
-  };
-
   const handleCreateNewComponent = async () => {
     if (!searchTerm || !id) return;
     try {
@@ -188,7 +145,7 @@ export default function RecipeDetails() {
       if (data.id) {
         setSelectedComponentId(data.id);
         setShowNewComponentForm(false);
-        setFilteredOptions([]);
+        setFilteredOptions([]); // ocultar dropdown
         if (componentType === "material") setMaterials([...materials, { id: data.id, name: searchTerm, unit: newMaterialUnit }]);
         if (componentType === "recipe") setRecipes([...recipes, { id: data.id, name: searchTerm, yield: Number(newRecipeYield) }]);
       }
@@ -222,60 +179,24 @@ export default function RecipeDetails() {
 
   const renderComponents = (components: Component[]) => {
     return components.map((comp, index) => {
-      const isEditing = editingComponentId === comp.id;
-      return (
-        <li key={`${comp.type}-${index}`} className="mb-2">
-          <div className="flex justify-between items-center">
-            <div>
-              {comp.type === "material" ? (
-                <>
-                  🧁 <strong>{comp.name}</strong>: {isEditing ? (
-                    <input
-                      type="number"
-                      value={newQty}
-                      onChange={(e) => setNewQty(Number(e.target.value))}
-                      className="border p-1 w-20 mx-2"
-                    />
-                  ) : (
-                    `${comp.quantity} ${comp.unit}`
-                  )}
-                </>
-              ) : (
-                <>
-                  📦 <Link to={`/recipes/${comp.id}`} className="text-pink-600 hover:underline font-semibold">
-                    {comp.name}
-                  </Link> (x{isEditing ? (
-                    <input
-                      type="number"
-                      value={newQty}
-                      onChange={(e) => setNewQty(Number(e.target.value))}
-                      className="border p-1 w-20 mx-2"
-                    />
-                  ) : comp.quantity})
-                </>
-              )}
-            </div>
-            <div className="text-sm flex gap-2">
-              {isEditing ? (
-                <>
-                  <button onClick={() => saveEdit(comp)} className="text-green-600">Guardar</button>
-                  <button onClick={() => setEditingComponentId(null)} className="text-gray-500">Cancelar</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => handleEdit(comp)} className="text-blue-500 underline">Editar</button>
-                  <button onClick={() => handleDelete(comp)} className="text-red-500 underline">Eliminar</button>
-                </>
-              )}
-            </div>
-          </div>
-          {comp.type === "recipe" && comp.components && comp.components.length > 0 && (
+      if (comp.type === "material") {
+        return (
+          <li key={`material-${index}`} className="mb-2">
+            🧁 <strong>{comp.name}</strong>: {comp.quantity} {comp.unit}
+          </li>
+        );
+      } else {
+        return (
+          <li key={`recipe-${index}`} className="mb-2">
+            📦 <Link to={`/recipes/${comp.id}`} className="text-pink-600 hover:underline font-semibold">
+              {comp.name}
+            </Link> (x{comp.quantity})
             <ul className="ml-4 mt-1 list-disc text-sm text-pink-700">
               {renderComponents(comp.components)}
             </ul>
-          )}
-        </li>
-      );
+          </li>
+        );
+      }
     });
   };
 
@@ -302,7 +223,138 @@ export default function RecipeDetails() {
             {renderComponents(recipe.components)}
           </ul>
 
-          <!-- El resto del formulario para agregar componentes y calcular costos sigue igual -->
+          <div className="border-t pt-4 mt-6">
+            <h3 className="font-semibold mb-2">Agregar componente</h3>
+            <div className="mb-2">
+              <select
+                className="border rounded px-2 py-1"
+                value={componentType}
+                onChange={(e) => {
+                  setComponentType(e.target.value);
+                  setSearchTerm("");
+                  setSelectedComponentId(null);
+                  setShowNewComponentForm(false);
+                  setFilteredOptions([]); // ocultar dropdown
+                }}
+              >
+                <option value="material">Material</option>
+                <option value="recipe">Receta</option>
+              </select>
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setSelectedComponentId(null);
+              }}
+              placeholder="Buscar por nombre"
+              className="border px-2 py-1 rounded w-full mb-1"
+            />
+            {searchTerm && filteredOptions.length > 0 && (
+              <ul className="bg-white border rounded shadow max-h-40 overflow-y-auto mb-2">
+                {filteredOptions.map((opt) => (
+                  <li
+                    key={opt.id}
+                    className="px-3 py-1 hover:bg-pink-100 cursor-pointer"
+                    onClick={() => {
+                      setSearchTerm(opt.name);
+                      setSelectedComponentId(opt.id);
+                      setShowNewComponentForm(false);
+                      setFilteredOptions([]); // ⬅️ Oculta el dropdown al seleccionar
+                    }}
+                  >
+                    {opt.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {showNewComponentForm && (
+              <div className="bg-pink-50 border rounded p-3 mt-2">
+                <p className="mb-2 font-medium text-pink-700">
+                  Crear nuevo {componentType === "material" ? "material" : "receta"} llamado "{searchTerm}"
+                </p>
+                {componentType === "material" ? (
+                  <input
+                    type="text"
+                    placeholder="Unidad (ej: gramos, ml)"
+                    value={newMaterialUnit}
+                    onChange={(e) => setNewMaterialUnit(e.target.value)}
+                    className="border px-2 py-1 rounded w-full mb-2"
+                  />
+                ) : (
+                  <>
+                    <input
+                      type="number"
+                      placeholder="Rinde"
+                      value={newRecipeYield}
+                      onChange={(e) => setNewRecipeYield(e.target.value)}
+                      className="border px-2 py-1 rounded w-full mb-2"
+                    />
+                    <textarea
+                      placeholder="Procedimiento"
+                      value={newRecipeProcedure}
+                      onChange={(e) => setNewRecipeProcedure(e.target.value)}
+                      className="border px-2 py-1 rounded w-full mb-2"
+                      rows={3}
+                    />
+                  </>
+                )}
+                <button
+                  onClick={handleCreateNewComponent}
+                  className="bg-pink-400 text-white px-4 py-1 rounded hover:bg-pink-500"
+                >
+                  Crear y seleccionar
+                </button>
+              </div>
+            )}
+            <input
+              type="number"
+              value={componentQuantity}
+              onChange={(e) => setComponentQuantity(e.target.value)}
+              className="border px-2 py-1 rounded w-full mt-2"
+              placeholder="Cantidad"
+            />
+            <button
+              onClick={handleAddComponent}
+              className="bg-pink-500 text-white px-4 py-2 rounded mt-3 hover:bg-pink-600"
+            >
+              Agregar a la receta
+            </button>
+          </div>
+
+          <div className="border-t pt-4 mt-6">
+            <h2 className="text-lg font-semibold mb-2">Costo total</h2>
+            <div className="mb-2">
+              <label className="text-sm text-pink-600 mr-2">Cantidad deseada:</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={costQty}
+                onChange={(e) => setCostQty(e.target.value)}
+                className="border border-pink-300 rounded px-2 py-1 text-sm w-24"
+              />
+            </div>
+
+            {materialCosts.length > 0 && (
+              <div className="text-sm text-pink-800 space-y-1 mt-2">
+                {materialCosts.map((mat, idx) => (
+                  <div key={idx} className="flex justify-between border-b border-pink-100 py-1">
+                    <div>
+                      {mat.name} ({mat.quantity.toFixed(2)} {mat.unit})
+                    </div>
+                    <div>${mat.cost.toFixed(2)}</div>
+                  </div>
+                ))}
+                <div className="flex justify-between font-bold border-t border-pink-300 pt-2 mt-2">
+                  <div>Total</div>
+                  <div>${totalCost?.toFixed(2)}</div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="mt-6 text-center">
             <button
