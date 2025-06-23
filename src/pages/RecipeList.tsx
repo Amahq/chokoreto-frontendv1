@@ -1,0 +1,70 @@
+import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+
+interface Recipe {
+  id: number;
+  name: string;
+  image_url?: string;
+  yield: number;
+}
+
+export default function RecipeList() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      try {
+        const res = await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes?all=true");
+        const data = await res.json();
+        setRecipes(data);
+      } catch (err) {
+        setError("Error al cargar recetas");
+      }
+      setLoading(false);
+    };
+    fetchRecipes();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
+      <header className="flex items-center justify-center mb-6">
+        <img src="/capybara-mascot.png" alt="Capibara Chokoreto" className="w-14 h-14 mr-2" />
+        <h1 className="text-3xl font-bold text-pink-600">Chokoreto</h1>
+      </header>
+
+      <h2 className="text-xl font-semibold text-center mb-4">Lista de recetas</h2>
+
+      {loading && <p className="text-center text-pink-600">Cargando...</p>}
+      {error && <p className="text-center text-red-600">{error}</p>}
+
+      <div className="grid gap-4 max-w-md mx-auto">
+        {recipes.map((r) => (
+          <Link
+            to={`/recipes/${r.id}`}
+            key={r.id}
+            className="bg-white rounded-2xl shadow p-4 flex items-center space-x-4 hover:bg-pink-50 transition"
+          >
+            {r.image_url ? (
+              <img
+                src={r.image_url}
+                alt={r.name}
+                className="w-16 h-16 object-cover rounded-xl border border-pink-200"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-pink-100 rounded-xl flex items-center justify-center text-pink-400">
+                <Sparkles className="w-6 h-6" />
+              </div>
+            )}
+            <div className="flex-1">
+              <h3 className="font-bold text-pink-700">{r.name}</h3>
+              <p className="text-sm text-pink-500">Rinde: {r.yield}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
