@@ -18,8 +18,8 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const saveEdit = async (comp: Component) => {
-await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${recipeId}/components`, {
-      method: "PUT",
+await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
+	method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         component_id: comp.id,
@@ -32,8 +32,8 @@ await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/comp
 
   const handleDelete = async (comp: Component) => {
 if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
-await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${recipeId}/components?component_id=${comp.id}`, {
-      method: "DELETE"
+await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
+	method: "DELETE"
     });
     onChange();
   };
