@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { RecipeHeader, ComponentList, AddComponentForm, CostCalculator } from "../../components/RecipeDetails";
 import { uploadImage } from "../../lib/uploadImage";
+import { authFetch } from "../../lib/api";
 import type { RecipeData, MaterialCost, Material, RecipeRef } from "../../components/RecipeDetails";
-import { toast } from "react-toastify"
+import { toast } from "react-toastify";
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -92,6 +93,24 @@ export default function RecipeDetails() {
       alert("❌ No se pudo subir la imagen");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
+    if (!confirmed || !id) return;
+    try {
+      const res = await authFetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("🗑️ Receta eliminada con éxito");
+        navigate("/recipes");
+      } else {
+        toast.error("❌ Error al eliminar la receta");
+      }
+    } catch (err) {
+      toast.error("Error de red");
     }
   };
 
@@ -194,27 +213,12 @@ export default function RecipeDetails() {
             <button onClick={() => navigate(-1)} className="text-pink-600 hover:underline font-medium">
               ← Volver
             </button>
-			<button
-  onClick={async () => {
-    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
-    if (!confirmed) return;
-
-    const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
-      toast.success("Receta eliminada");
-      navigate("/recipes");
-    } else {
-      toast.error("Error al eliminar la receta");
-    }
-  }}
-  className="text-red-500 mt-4 underline"
->
-  Eliminar receta
-</button>
-
+            <button
+              onClick={handleDelete}
+              className="w-full mt-4 bg-red-100 text-red-600 border border-red-300 rounded-xl px-4 py-2 hover:bg-red-200 font-semibold text-sm"
+            >
+              Eliminar receta
+            </button>
           </div>
         </div>
       )}
