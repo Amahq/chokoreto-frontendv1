@@ -118,23 +118,7 @@ try {
     }
   };
 
-  const handleDelete = async () => {
-    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
-    if (!confirmed || !id) return;
-    try {
-      const res = await authFetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        toast.success("🗑️ Receta eliminada con éxito");
-        navigate("/recipes");
-      } else {
-        toast.error("❌ Error al eliminar la receta");
-      }
-    } catch (err) {
-      toast.error("Error de red");
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
