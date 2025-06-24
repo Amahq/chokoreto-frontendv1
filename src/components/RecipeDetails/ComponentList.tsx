@@ -27,9 +27,9 @@ await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
 	
 	method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: {
         quantity: Number(newQty)
-      })
+      }
     });
     setEditingId(null);
     onChange();
