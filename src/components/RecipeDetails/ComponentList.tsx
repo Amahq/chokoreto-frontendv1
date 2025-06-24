@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Component } from "./types";
+import { API_BASE_URL } from "@/lib/config";
 
 interface Props {
   recipeId: number;
@@ -18,26 +19,19 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const saveEdit = async (comp: Component) => {
-	  	console.log("Actualizando componente", {
-		endpoint: `/api/components/${recipeId}/components/${comp.id}`,
-		body: { quantity: Number(newQty) }
-	});
-await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
-	method: "PUT",
+    await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        component_id: comp.id,
-        quantity: Number(newQty)
-      })
+      body: JSON.stringify({ quantity: Number(newQty) })
     });
     setEditingId(null);
     onChange();
   };
 
   const handleDelete = async (comp: Component) => {
-if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
-await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
-	method: "DELETE"
+    if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
+    await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
+      method: "DELETE"
     });
     onChange();
   };
@@ -46,7 +40,7 @@ await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
     return list.map((comp, index) => {
       const isEditing = editingId === comp.id;
       return (
-<li key={comp.id} className="mb-2">
+        <li key={`${comp.type}-${index}`} className="mb-2">
           <div className="flex justify-between items-center">
             <div>
               {comp.type === "material" ? (
