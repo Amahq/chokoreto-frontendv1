@@ -23,7 +23,7 @@ await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         component_id: comp.id,
-        quantity: newQty
+        quantity: Number(newQty)
       })
     });
     setEditingId(null);
