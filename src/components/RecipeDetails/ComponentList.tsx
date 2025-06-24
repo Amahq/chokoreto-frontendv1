@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Component } from "./types";
-import { API_BASE_URL } from "../../lib/config";
+import { API_BASE_URL } from "@/lib/config";
 
 interface Props {
   recipeId: number;
@@ -11,7 +12,9 @@ interface Props {
 
 export default function ComponentList({ recipeId, components, onChange }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
+  
   const [newQty, setNewQty] = useState<number>(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleEdit = (comp: Component) => {
     setEditingId(comp.id);
@@ -19,21 +22,41 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const saveEdit = async (comp: Component) => {
-    await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: Number(newQty) })
-    });
-    setEditingId(null);
-    onChange();
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: Number(newQty) })
+      });
+      if (!res.ok) throw new Error("Error al actualizar");
+      alert("✅ Componente actualizado");
+      setEditingId(null);
+      onChange();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error al guardar los cambios");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDelete = async (comp: Component) => {
     if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
-    await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
-      method: "DELETE"
-    });
-    onChange();
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Error al eliminar");
+      alert("🗑️ Componente eliminado");
+      onChange();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error al eliminar el componente");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const renderComponents = (list: Component[]) => {
@@ -74,13 +97,37 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
             <div className="text-sm flex gap-2">
               {isEditing ? (
                 <>
-                  <button onClick={() => saveEdit(comp)} className="text-green-600">Guardar</button>
-                  <button onClick={() => setEditingId(null)} className="text-gray-500">Cancelar</button>
+                  <button
+                    onClick={() => saveEdit(comp)}
+                    disabled={isProcessing}
+                    className="text-green-600"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    disabled={isProcessing}
+                    className="text-gray-500"
+                  >
+                    Cancelar
+                  </button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => handleEdit(comp)} className="text-blue-500 underline">Editar</button>
-                  <button onClick={() => handleDelete(comp)} className="text-red-500 underline">Eliminar</button>
+                  <button
+                    onClick={() => handleEdit(comp)}
+                    disabled={isProcessing}
+                    className="text-blue-500 underline"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(comp)}
+                    disabled={isProcessing}
+                    className="text-red-500 underline"
+                  >
+                    Eliminar
+                  </button>
                 </>
               )}
             </div>
