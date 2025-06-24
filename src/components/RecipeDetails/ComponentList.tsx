@@ -19,10 +19,15 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
 
   const saveEdit = async (comp: Component) => {
 await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
+	
+	console.log("Actualizando componente", {
+  endpoint: `/api/components/${recipeId}/components/${comp.id}`,
+  body: { quantity: Number(newQty) }
+});
+	
 	method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        component_id: comp.id,
         quantity: Number(newQty)
       })
     });
