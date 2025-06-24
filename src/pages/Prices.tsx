@@ -8,8 +8,8 @@ interface Material {
 
 interface Price {
   material_id: number;
-  value: number;
-  created_at: string;
+  price: number;
+  date: string;
 }
 
 export default function Prices() {
@@ -38,21 +38,21 @@ export default function Prices() {
     fetchData();
   }, []);
 
-  const getLastPrice = (materialId: number): number | null => {
+  const getLastPrice = (materialId: number): Price | null => {
     const related = prices
       .filter((p) => p.material_id === materialId)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    return related.length ? related[0].value : null;
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return related.length ? related[0] : null;
   };
 
   const handleUpdatePrice = async (materialId: number) => {
-    const value = parseFloat(newPrices[materialId]);
-    if (isNaN(value)) return;
+    const price = parseFloat(newPrices[materialId]);
+    if (isNaN(price)) return;
 
     await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/prices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ material_id: materialId, value }),
+      body: JSON.stringify({ material_id: materialId, price }),
     });
 
     setNewPrices((prev) => ({ ...prev, [materialId]: "" }));
@@ -72,36 +72,47 @@ export default function Prices() {
               <th className="text-left p-2">Nombre</th>
               <th className="text-left p-2">Unidad</th>
               <th className="text-left p-2">Precio actual</th>
+              <th className="text-left p-2">Última actualización</th>
               <th className="text-left p-2">Nuevo precio</th>
               <th className="p-2">Acción</th>
             </tr>
           </thead>
           <tbody>
-            {materials.map((mat) => (
-              <tr key={mat.id} className="border-t">
-                <td className="p-2">{mat.name}</td>
-                <td className="p-2">{mat.unit}</td>
-                <td className="p-2">${getLastPrice(mat.id)?.toFixed(2) ?? "—"}</td>
-                <td className="p-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPrices[mat.id] || ""}
-                    onChange={(e) => setNewPrices((prev) => ({ ...prev, [mat.id]: e.target.value }))}
-                    className="border rounded px-2 py-1 w-24"
-                  />
-                </td>
-                <td className="p-2 text-center">
-                  <button
-                    onClick={() => handleUpdatePrice(mat.id)}
-                    className="text-blue-500 hover:underline"
-                  >
-                    Guardar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {materials.map((mat) => {
+              const last = getLastPrice(mat.id);
+              return (
+                <tr key={mat.id} className="border-t">
+                  <td className="p-2">{mat.name}</td>
+                  <td className="p-2">{mat.unit}</td>
+                  <td className="p-2">
+                    {last ? `$${last.price.toFixed(2)}` : "—"}
+                  </td>
+                  <td className="p-2">
+                    {last ? new Date(last.date).toLocaleDateString() : "—"}
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newPrices[mat.id] || ""}
+                      onChange={(e) =>
+                        setNewPrices((prev) => ({ ...prev, [mat.id]: e.target.value }))
+                      }
+                      className="border rounded px-2 py-1 w-24"
+                    />
+                  </td>
+                  <td className="p-2 text-center">
+                    <button
+                      onClick={() => handleUpdatePrice(mat.id)}
+                      className="text-blue-500 hover:underline"
+                    >
+                      Guardar
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
