@@ -43,6 +43,14 @@ function Navigation() {
         🧂
         <span className="text-xs mt-1">Materiales</span>
       </Link>
+	  <Link
+  to="/prices"
+  className={`flex flex-col items-center text-sm ${isActive("/prices") ? "text-pink-600 font-bold" : "text-pink-400"}`}
+	  >
+	  💸
+	  <span className="text-xs mt-1">Precios</span>
+	  </Link>
+
     </nav>
   );
 }
