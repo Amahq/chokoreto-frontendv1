@@ -193,6 +193,27 @@ export default function RecipeDetails() {
             <button onClick={() => navigate(-1)} className="text-pink-600 hover:underline font-medium">
               ← Volver
             </button>
+			<button
+  onClick={async () => {
+    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
+    if (!confirmed) return;
+
+    const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      toast.success("Receta eliminada");
+      navigate("/recipes");
+    } else {
+      toast.error("Error al eliminar la receta");
+    }
+  }}
+  className="text-red-500 mt-4 underline"
+>
+  Eliminar receta
+</button>
+
           </div>
         </div>
       )}
