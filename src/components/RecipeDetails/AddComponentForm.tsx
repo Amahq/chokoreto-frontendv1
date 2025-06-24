@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Material, RecipeRef } from "./types";
+import { API_BASE_URL } from "../../lib/config";
 
 interface Props {
   recipeId: number;
@@ -33,8 +34,8 @@ export default function AddComponentForm({ recipeId, materials, recipes, onChang
     if (!searchTerm || !recipeId) return;
     try {
       const url = componentType === "material"
-        ? "https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials"
-        : "https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes";
+        ? `${API_BASE_URL}/api/materials`
+        : `${API_BASE_URL}/api/recipes`;
 
       const body = componentType === "material"
         ? { name: searchTerm, unit: newMaterialUnit }
@@ -60,7 +61,7 @@ export default function AddComponentForm({ recipeId, materials, recipes, onChang
   const handleAddComponent = async () => {
     if (!selectedComponentId || !componentQuantity || !recipeId) return;
     try {
-      const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/components/${recipeId}/components`, {
+      const res = await fetch(`${API_BASE_URL}/api/components/${recipeId}/components`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

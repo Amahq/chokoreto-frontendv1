@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../lib/config";
 
 interface Material {
   id: number;
@@ -15,7 +16,7 @@ export default function Materials() {
   const fetchMaterials = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials");
+      const res = await fetch(`${API_BASE_URL}/api/materials`);
       const data = await res.json();
       setMaterials(data);
     } catch (err) {
@@ -30,7 +31,7 @@ export default function Materials() {
 
   const handleAdd = async () => {
     if (!newName || !newUnit) return;
-    const res = await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials", {
+    const res = await fetch(`${API_BASE_URL}/api/materials`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newName, unit: newUnit }),
@@ -43,7 +44,7 @@ export default function Materials() {
   };
 
   const handleUpdate = async (mat: Material) => {
-    await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials/${mat.id}`, {
+    await fetch(`${API_BASE_URL}/api/materials/${mat.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: mat.name, unit: mat.unit }),
@@ -53,7 +54,7 @@ export default function Materials() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("¿Eliminar este material?")) return;
-    await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials/${id}`, {
+    await fetch(`${API_BASE_URL}/api/materials/${id}`, {
       method: "DELETE",
     });
     fetchMaterials();

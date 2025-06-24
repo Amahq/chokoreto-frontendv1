@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { uploadImage } from "../lib/uploadImage";
+import { API_BASE_URL } from "../lib/config";
 
 export default function CreateRecipe() {
   const [form, setForm] = useState({ name: "", procedure: "", yield: "", image_url: "" });
@@ -33,7 +34,7 @@ export default function CreateRecipe() {
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes", {
+      const res = await fetch(`${API_BASE_URL}/api/recipes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

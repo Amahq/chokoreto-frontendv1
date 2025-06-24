@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "../lib/config";
 
 interface Recipe {
   id: number;
@@ -17,7 +18,7 @@ export default function RecipeList() {
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
-        const res = await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes?all=true");
+        const res = await fetch(`${API_BASE_URL}/api/recipes?all=true`);
         const data = await res.json();
         setRecipes(data);
       } catch (err) {
