@@ -29,16 +29,38 @@ export default function RecipeDetails() {
   const [uploading, setUploading] = useState(false);
 
   const fetchRecipe = async () => {
-    try {
+try {
       const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`);
+      if (res.status === 404) {
+        setRecipe(null);
+        return;
+      }
       const data = await res.json();
       setRecipe(data);
-      setEditedName(data.name);
-      setEditedYield(data.yield.toString());
-      setEditedProcedure(data.procedure);
-      setEditedImageUrl(data.image_url || "");
+      // ...
     } catch (err: any) {
       setError("Error al recargar la receta: " + err.message);
+    }
+  };
+
+  // handleDelete usando toast.promise y navigate replace
+  const handleDelete = async () => {
+    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
+    if (!confirmed || !id) return;
+    try {
+      await toast.promise(
+        authFetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
+          method: "DELETE",
+        }),
+        {
+          pending: "Eliminando...",
+          success: "🗑️ Receta eliminada",
+          error: "❌ Error al eliminar la receta",
+        }
+      );
+      navigate("/recipes", { replace: true });
+    } catch (err) {
+      console.error(err);
     }
   };
 
