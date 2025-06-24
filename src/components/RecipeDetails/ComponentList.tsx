@@ -18,7 +18,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const saveEdit = async (comp: Component) => {
-await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
+await fetch(`/api/components/${recipeId}/components/${comp.row_id}`, {
 	method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -32,7 +32,7 @@ await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
 
   const handleDelete = async (comp: Component) => {
 if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
-await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
+await fetch(`/api/components/${recipeId}/components/${comp.row_id}`, {
 	method: "DELETE"
     });
     onChange();
@@ -42,7 +42,7 @@ await fetch(`/api/components/${recipeId}/components/${comp.id}`, {
     return list.map((comp, index) => {
       const isEditing = editingId === comp.id;
       return (
-<li key={`${comp.type}-${index}`} className="mb-2">
+<li key={comp.row_id} className="mb-2">
           <div className="flex justify-between items-center">
             <div>
               {comp.type === "material" ? (
