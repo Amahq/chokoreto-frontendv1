@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../lib/config";
 
 interface Material {
   id: number;
@@ -22,8 +23,8 @@ export default function Prices() {
     setLoading(true);
     try {
       const [materialsRes, pricesRes] = await Promise.all([
-        fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials"),
-        fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/prices"),
+        fetch(`${API_BASE_URL}/api/materials`),
+        fetch(`${API_BASE_URL}/api/prices`),
       ]);
       const [materialsData, pricesData] = await Promise.all([materialsRes.json(), pricesRes.json()]);
       setMaterials(materialsData);
@@ -49,7 +50,7 @@ export default function Prices() {
     const price = parseFloat(newPrices[materialId]);
     if (isNaN(price)) return;
 
-    await fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/prices", {
+    await fetch(`${API_BASE_URL}/api/prices`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ material_id: materialId, price }),
