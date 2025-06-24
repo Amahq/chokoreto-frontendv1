@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { RecipeHeader, ComponentList, AddComponentForm, CostCalculator } from "../../components/RecipeDetails";
 import { uploadImage } from "../../lib/uploadImage";
 import type { RecipeData, MaterialCost, Material, RecipeRef } from "../../components/RecipeDetails";
+import { toast } from "react-toastify"
 
 export default function RecipeDetails() {
   const { id } = useParams();
