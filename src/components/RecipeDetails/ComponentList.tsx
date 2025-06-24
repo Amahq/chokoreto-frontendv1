@@ -1,8 +1,8 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Component } from "./types";
 import { API_BASE_URL } from "../../lib/config";
+import { toast } from "react-toastify";
 
 interface Props {
   recipeId: number;
@@ -12,7 +12,6 @@ interface Props {
 
 export default function ComponentList({ recipeId, components, onChange }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
-  
   const [newQty, setNewQty] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -30,12 +29,12 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
         body: JSON.stringify({ quantity: Number(newQty) })
       });
       if (!res.ok) throw new Error("Error al actualizar");
-      alert("✅ Componente actualizado");
+      toast.success("✅ Componente actualizado");
       setEditingId(null);
       onChange();
     } catch (err) {
       console.error(err);
-      alert("❌ Error al guardar los cambios");
+      toast.error("❌ Error al guardar los cambios");
     } finally {
       setIsProcessing(false);
     }
@@ -49,11 +48,11 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
         method: "DELETE"
       });
       if (!res.ok) throw new Error("Error al eliminar");
-      alert("🗑️ Componente eliminado");
+      toast.success("🗑️ Componente eliminado");
       onChange();
     } catch (err) {
       console.error(err);
-      alert("❌ Error al eliminar el componente");
+      toast.error("❌ Error al eliminar el componente");
     } finally {
       setIsProcessing(false);
     }
