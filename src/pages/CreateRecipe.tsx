@@ -1,14 +1,31 @@
-
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
+import { uploadImage } from "../lib/uploadImage";
 
 export default function CreateRecipe() {
   const [form, setForm] = useState({ name: "", procedure: "", yield: "", image_url: "" });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setForm((prev) => ({ ...prev, image_url: url }));
+    } catch (err) {
+      console.error(err);
+      alert("❌ No se pudo subir la imagen");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -30,6 +47,7 @@ export default function CreateRecipe() {
       if (data.success) {
         setMessage("✨ Receta creada con éxito!");
         setForm({ name: "", procedure: "", yield: "", image_url: "" });
+        setImageFile(null);
       } else {
         setMessage("Error: " + data.error);
       }
@@ -88,14 +106,17 @@ export default function CreateRecipe() {
         </div>
 
         <div>
-          <label className="block mb-1 font-medium">Imagen (URL)</label>
+          <label className="block mb-1 font-medium">Imagen (opcional)</label>
           <input
-            type="text"
-            name="image_url"
-            value={form.image_url}
-            onChange={handleChange}
-            className="w-full border border-pink-300 rounded-xl px-3 py-2"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="w-full mb-2"
           />
+          {form.image_url && (
+            <img src={form.image_url} alt="Preview" className="w-full h-48 object-cover rounded-xl mb-2" />
+          )}
         </div>
 
         <button

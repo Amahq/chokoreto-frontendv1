@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { RecipeHeader, ComponentList, AddComponentForm, CostCalculator } from "../../components/RecipeDetails";
-import type { RecipeData, MaterialCost, Material, RecipeRef } from "@/components/RecipeDetails";
-import RecipeHeaderEditor from "./RecipeHeaderEditor";
-
+import { uploadImage } from "../../lib/uploadImage";
+import { authFetch } from "../../lib/api";
+import type { RecipeData, MaterialCost, Material, RecipeRef } from "../../components/RecipeDetails";
+import { toast } from "react-toastify";
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -25,18 +26,41 @@ export default function RecipeDetails() {
   const [editedYield, setEditedYield] = useState("");
   const [editedProcedure, setEditedProcedure] = useState("");
   const [editedImageUrl, setEditedImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const fetchRecipe = async () => {
-    try {
-const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`);
+try {
+      const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`);
+      if (res.status === 404) {
+        setRecipe(null);
+        return;
+      }
       const data = await res.json();
       setRecipe(data);
-      setEditedName(data.name);
-      setEditedYield(data.yield.toString());
-      setEditedProcedure(data.procedure);
-      setEditedImageUrl(data.image_url || "");
+      // ...
     } catch (err: any) {
       setError("Error al recargar la receta: " + err.message);
+    }
+  };
+
+  // handleDelete usando toast.promise y navigate replace
+  const handleDelete = async () => {
+    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
+    if (!confirmed || !id) return;
+    try {
+      await toast.promise(
+        authFetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
+          method: "DELETE",
+        }),
+        {
+          pending: "Eliminando...",
+          success: "🗑️ Receta eliminada",
+          error: "❌ Error al eliminar la receta",
+        }
+      );
+      navigate("/recipes", { replace: true });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -46,7 +70,7 @@ const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.
         const [mRes, rRes, dRes] = await Promise.all([
           fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/materials?all=true"),
           fetch("https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes?all=true"),
-fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`)
+          fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`)
         ]);
         const [mData, rData, dData] = await Promise.all([mRes.json(), rRes.json(), dRes.json()]);
         setMaterials(mData);
@@ -68,7 +92,7 @@ fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${
     const fetchCost = async () => {
       if (!id || isNaN(Number(costQty))) return;
       try {
-const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}/cost?qty=${costQty}`);
+        const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}/cost?qty=${costQty}`);
         const data = await res.json();
         if (!data.error) {
           setMaterialCosts(data.materials);
@@ -79,6 +103,23 @@ const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.
     fetchCost();
   }, [id, costQty]);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setEditedImageUrl(url);
+    } catch (err) {
+      console.error(err);
+      alert("❌ No se pudo subir la imagen");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
+
   return (
     <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
       {loading && <p className="text-center text-pink-600">Cargando...</p>}
@@ -86,20 +127,37 @@ const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.
       {!loading && recipe && (
         <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-md p-6">
           {editMode ? (
-  <RecipeHeaderEditor
-    name={editedName}
-    setName={setEditedName}
-    yieldValue={editedYield}
-    setYield={setEditedYield}
-    procedure={editedProcedure}
-    setProcedure={setEditedProcedure}
-    imageUrl={editedImageUrl}
-    setImageUrl={setEditedImageUrl}
-  />
-) : (
-  <RecipeHeader recipe={recipe} />
-)}
-
+            <>
+              <input
+                className="w-full border rounded px-3 py-1 mb-2"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+              />
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-1 mb-2"
+                value={editedYield}
+                onChange={(e) => setEditedYield(e.target.value)}
+              />
+              <textarea
+                className="w-full border rounded px-3 py-1 mb-2"
+                rows={4}
+                value={editedProcedure}
+                onChange={(e) => setEditedProcedure(e.target.value)}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full mb-2"
+              />
+              {editedImageUrl && (
+                <img src={editedImageUrl} alt="Preview" className="w-full h-48 object-cover rounded-xl mb-4" />
+              )}
+            </>
+          ) : (
+            <RecipeHeader recipe={recipe} />
+          )}
 
           {!editMode ? (
             <button
@@ -112,7 +170,7 @@ const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.
             <div className="flex gap-4 mb-6">
               <button
                 onClick={async () => {
-const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
+                  const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -160,6 +218,12 @@ const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.
           <div className="mt-6 text-center">
             <button onClick={() => navigate(-1)} className="text-pink-600 hover:underline font-medium">
               ← Volver
+            </button>
+            <button
+              onClick={handleDelete}
+              className="w-full mt-4 bg-red-100 text-red-600 border border-red-300 rounded-xl px-4 py-2 hover:bg-red-200 font-semibold text-sm"
+            >
+              Eliminar receta
             </button>
           </div>
         </div>
