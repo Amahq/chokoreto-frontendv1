@@ -167,7 +167,7 @@ export default function RecipeDetails() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={async () => {
-                  const res = await fetch(`https://recipes-backend.alejandro-hernandez-00.workers.dev/api/recipes/${id}`, {
+                  const res = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
