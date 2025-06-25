@@ -219,7 +219,7 @@ export default function RecipeDetails() {
             <button
               onClick={handleDelete}
               className="w-full mt-4 bg-red-100 text-red-600 border border-red-300 rounded-xl px-4 py-2 hover:bg-red-200 font-semibold text-sm"
-            >
+            > 
               Eliminar receta
             </button>
           </div>
