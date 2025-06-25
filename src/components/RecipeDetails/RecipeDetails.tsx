@@ -195,7 +195,7 @@ export default function RecipeDetails() {
                   setEditedYield(recipe.yield.toString());
                   setEditedProcedure(recipe.procedure);
                   setEditedImageUrl(recipe.image_url || "");
-                }}
+                }} 
                 className="text-gray-500 underline"
               >
                 Cancelar
