@@ -11,11 +11,16 @@ export async function trySyncPendingMutations() {
       const { id, type, target, payload } = mutation;
 
       if (target === "recipes") {
-        const endpoint = `${API_BASE_URL}/api/recipes${payload.id ? `/${payload.id}` : ""}`;
         const method =
-          type === "create" ? "POST" :
-          type === "update" ? "PUT" :
-          type === "delete" ? "DELETE" : "GET";
+  type === "create" ? "POST" :
+  type === "update" ? "PUT" :
+  type === "delete" ? "DELETE" : "GET";
+
+const endpoint =
+  type === "create"
+    ? `${API_BASE_URL}/api/recipes`
+    : `${API_BASE_URL}/api/recipes/${payload.id}`;
+
 
         const body = type === "delete" ? undefined : JSON.stringify(payload);
 
