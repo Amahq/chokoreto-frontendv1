@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { API_BASE_URL } from "./config";
 import { authFetch } from "./api";
-import type { PendingMutation, RecipeData } from "./db";
+import type { PendingMutation } from "./db";
 
 export async function trySyncPendingMutations() {
   const pending = await db.pendingMutations.toArray();
@@ -10,40 +10,37 @@ export async function trySyncPendingMutations() {
     try {
       const { id, type, target, payload } = mutation;
 
-      if (target === "recipes") {
-        const method =
-  type === "create" ? "POST" :
-  type === "update" ? "PUT" :
-  type === "delete" ? "DELETE" : "GET";
+      if (target !== "recipes" && target !== "materials") continue;
 
-const endpoint =
-  type === "create"
-    ? `${API_BASE_URL}/api/recipes`
-    : `${API_BASE_URL}/api/recipes/${payload.id}`;
+      const method =
+        type === "create" ? "POST" :
+        type === "update" ? "PUT" :
+        type === "delete" ? "DELETE" : "GET";
 
+      const endpoint =
+        type === "create"
+          ? `${API_BASE_URL}/api/${target}`
+          : `${API_BASE_URL}/api/${target}/${payload.id}`;
 
-        const body = type === "delete" ? undefined : JSON.stringify(payload);
+      const body = type === "delete" ? undefined : JSON.stringify(payload);
 
-        const res = await authFetch(endpoint, {
-          method,
-          headers: { "Content-Type": "application/json" },
-          body,
-        });
+      const res = await authFetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
 
-        if (!res.ok) throw new Error("Error del servidor");
+      if (!res.ok) throw new Error("Error del servidor");
 
-        // Si fue exitoso, eliminar de la cola y marcar receta como limpia
-        await db.pendingMutations.delete(id!);
+      await db.pendingMutations.delete(id!);
 
-        if (type !== "delete") {
-          await db.recipes.put({ ...payload, isDirty: false });
-        } else {
-          await db.recipes.delete(payload.id);
-        }
+      if (type !== "delete") {
+        await db[target].put({ ...payload, isDirty: false });
+      } else {
+        await db[target].delete(payload.id);
       }
     } catch (err) {
       console.warn("Error al sincronizar:", err);
-      // no eliminar de la cola, se reintentará luego
     }
   }
 }
