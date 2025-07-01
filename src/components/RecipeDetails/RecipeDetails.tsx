@@ -24,11 +24,19 @@ interface Props {
 }
 
 export default function RecipeDetails({ recipe, materials, recipes, navigate }: Props) {
+  if (!recipe) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-pink-600">
+        Cargando receta...
+      </div>
+    );
+  }
+
   const [editMode, setEditMode] = useState(false);
-const [editedName, setEditedName] = useState(recipe?.name ?? "");
-const [editedYield, setEditedYield] = useState(recipe?.yield?.toString() ?? "1");
-const [editedProcedure, setEditedProcedure] = useState(recipe?.procedure ?? "");
-const [editedImageUrl, setEditedImageUrl] = useState(recipe?.image_url ?? "");
+  const [editedName, setEditedName] = useState(recipe.name);
+  const [editedYield, setEditedYield] = useState(recipe.yield.toString());
+  const [editedProcedure, setEditedProcedure] = useState(recipe.procedure);
+  const [editedImageUrl, setEditedImageUrl] = useState(recipe.image_url || "");
   const [uploading, setUploading] = useState(false);
   const [costQty, setCostQty] = useState("1");
 
