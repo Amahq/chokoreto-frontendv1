@@ -80,21 +80,6 @@ export default function RecipeDetails() {
     }
   }, [recipe]);
 
-  useEffect(() => {
-    const fetchCost = async () => {
-      if (!id || isNaN(Number(costQty))) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/recipes/${id}/cost?qty=${costQty}`);
-        const data = await res.json();
-        if (!data.error) {
-          setMaterialCosts(data.materials);
-          setTotalCost(data.total_cost);
-        }
-      } catch {}
-    };
-    fetchCost();
-  }, [id, costQty]);
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -220,8 +205,7 @@ export default function RecipeDetails() {
             recipeId={recipe.id}
             costQty={costQty}
             setCostQty={setCostQty}
-            materialCosts={materialCosts}
-            totalCost={totalCost}
+            components={recipe.components}
           />
           <div className="mt-6 text-center">
             <button
@@ -242,3 +226,4 @@ export default function RecipeDetails() {
     </div>
   );
 }
+
