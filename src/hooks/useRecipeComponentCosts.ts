@@ -40,7 +40,13 @@ export function useRecipeComponentCosts(components: RecipeComponent[], qty: numb
       setLoading(false);
     };
 
-    if (qty > 0 && components.length > 0) calculate();
+    if (qty > 0 && components.length > 0) {
+      calculate();
+    } else {
+      setMaterialCosts([]);
+      setTotalCost(0);
+      setLoading(false);
+    }
   }, [components, qty]);
 
   return { materialCosts, totalCost, loading };
