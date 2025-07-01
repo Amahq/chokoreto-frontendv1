@@ -2,7 +2,7 @@ import { useState } from "react";
 import { API_BASE_URL } from "../../lib/config";
 import { authFetch } from "../../lib/api";
 import { toast } from "react-toastify";
-import type { RecipeComponent, Material, RecipeRef } from "./types";
+import type { RecipeComponent } from "./types";
 
 interface Props {
   recipeId: number;
@@ -37,23 +37,31 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   };
 
   const handleUpdate = async (id: number) => {
+    const amount = parseFloat(editedAmount);
+    if (isNaN(amount)) {
+      alert("Cantidad inválida");
+      return;
+    }
+
     try {
-      await toast.promise(
-        authFetch(`${API_BASE_URL}/api/components/${recipeId}/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: parseFloat(editedAmount) }),
-        }),
-        {
-          pending: "Guardando...",
-          success: "✅ Cantidad actualizada",
-          error: "❌ Error al actualizar",
-        }
-      );
+      const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+
+      if (!res.ok) {
+        console.error("❌ Error al guardar componente", await res.text());
+        toast.error("Error al guardar componente");
+        return;
+      }
+
+      toast.success("✅ Componente actualizado");
       setEditingId(null);
       onChange();
     } catch (err) {
       console.error(err);
+      toast.error("❌ Error inesperado al guardar");
     }
   };
 
