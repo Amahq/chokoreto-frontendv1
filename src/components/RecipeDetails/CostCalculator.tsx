@@ -5,13 +5,13 @@ interface Props {
   recipeId: number;
   costQty: string;
   setCostQty: (v: string) => void;
-  components: RecipeComponent[];
+  components?: RecipeComponent[]; // ⚠️ ahora es opcional
 }
 
 export default function CostCalculator({
   costQty,
   setCostQty,
-  components,
+  components = [], // ⚠️ valor por defecto si es undefined
 }: Props) {
   const qty = parseFloat(costQty) || 1;
 
@@ -39,7 +39,7 @@ export default function CostCalculator({
         <p className="text-pink-500 text-sm mb-3">Calculando...</p>
       ) : (
         <>
-          {materialCosts.length > 0 && (
+          {materialCosts.length > 0 ? (
             <ul className="text-sm text-pink-800 mb-3 space-y-1">
               {materialCosts.map((m, i) => (
                 <li key={i}>
@@ -47,6 +47,8 @@ export default function CostCalculator({
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="text-pink-500 text-sm mb-3">Sin materiales calculables</p>
           )}
           <div className="text-right font-bold text-pink-700">
             Total: ${totalCost.toFixed(2)}
