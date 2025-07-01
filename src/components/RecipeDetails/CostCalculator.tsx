@@ -1,8 +1,5 @@
-import React from "react";
-import type { MaterialCost } from "./types";
-import { usePrices } from "../../hooks/usePrices";
-import { useEffect, useState } from "react";
-import type { RecipeComponent } from "../../components/RecipeDetails/types";
+import { useRecipeComponentCosts } from "../../hooks/useRecipeComponentCosts";
+import type { RecipeComponent } from "./types";
 
 interface Props {
   recipeId: number;
@@ -11,41 +8,25 @@ interface Props {
   components: RecipeComponent[];
 }
 
-export function CostCalculator({ recipeId, costQty, setCostQty, components }: Props) {
-  const [totalCost, setTotalCost] = useState<number | null>(null);
-  const [materialCosts, setMaterialCosts] = useState<{ name: string; cost: number }[]>([]);
+export default function CostCalculator({
+  costQty,
+  setCostQty,
+  components,
+}: Props) {
+  const qty = parseFloat(costQty) || 1;
 
-  useEffect(() => {
-    if (!costQty || isNaN(Number(costQty))) return;
-
-    const qty = parseFloat(costQty);
-    let total = 0;
-    const newCosts: { name: string; cost: number }[] = [];
-
-    const calculateCosts = async () => {
-      for (const c of components) {
-        if (c.type !== "material") continue;
-
-        const { prices } = usePrices(c.material.id);
-        const latest = [...prices].sort((a, b) => b.date.localeCompare(a.date))[0];
-
-        if (latest) {
-          const cost = latest.price * c.amount * qty;
-          total += cost;
-          newCosts.push({ name: c.material.name, cost });
-        }
-      }
-      setMaterialCosts(newCosts);
-      setTotalCost(total);
-    };
-
-    calculateCosts();
-  }, [components, costQty]);
+  const { materialCosts, totalCost, loading } = useRecipeComponentCosts(
+    components,
+    qty
+  );
 
   return (
     <div className="bg-white p-4 rounded-xl shadow mt-4">
       <h2 className="text-lg font-semibold mb-2">Costo estimado</h2>
-      <label className="block text-sm font-medium mb-1">Cantidad de producción:</label>
+
+      <label className="block text-sm font-medium mb-1">
+        Cantidad de producción:
+      </label>
       <input
         type="number"
         value={costQty}
@@ -54,21 +35,24 @@ export function CostCalculator({ recipeId, costQty, setCostQty, components }: Pr
         min={1}
       />
 
-      {materialCosts.length > 0 && (
-        <ul className="text-sm text-pink-800 mb-3 space-y-1">
-          {materialCosts.map((m, i) => (
-            <li key={i}>
-              {m.name}: ${m.cost.toFixed(2)}
-            </li>
-          ))}
-        </ul>
+      {loading ? (
+        <p className="text-pink-500 text-sm mb-3">Calculando...</p>
+      ) : (
+        <>
+          {materialCosts.length > 0 && (
+            <ul className="text-sm text-pink-800 mb-3 space-y-1">
+              {materialCosts.map((m, i) => (
+                <li key={i}>
+                  {m.name}: ${m.cost.toFixed(2)}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="text-right font-bold text-pink-700">
+            Total: ${totalCost.toFixed(2)}
+          </div>
+        </>
       )}
-
-      <div className="text-right font-bold text-pink-700">
-        Total: ${totalCost?.toFixed(2) ?? "0.00"}
-      </div>
     </div>
   );
 }
-
-export default CostCalculator;
