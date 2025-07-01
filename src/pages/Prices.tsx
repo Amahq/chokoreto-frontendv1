@@ -3,6 +3,7 @@ import { db } from "../lib/db";
 import type { Material } from "../components/RecipeDetails/types";
 import type { Price } from "../lib/db";
 import { toast } from "react-toastify";
+import { addPriceLocalFirst } from "../lib/api"; // ✅ usa wrapper limpio
 
 export default function Prices() {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -32,22 +33,24 @@ export default function Prices() {
     const materialId = parseInt(newMaterialId);
     if (!materialId || isNaN(priceValue)) return;
 
-    const entry: Price = {
-      materialId,
-      price: priceValue,
-      date: new Date().toISOString(),
-    };
-
     try {
-      await db.prices.put(entry);
-      await db.pendingMutations.add({
-        type: "create",
-        target: "prices",
-        payload: entry,
-        createdAt: new Date().toISOString(),
+      // Guardar localmente solo en pendingMutations
+      await addPriceLocalFirst({
+        material_id: materialId,
+        price: priceValue,
       });
-      toast.success("✅ Precio agregado localmente");
-      setPrices((prev) => [...prev, entry]);
+
+      toast.success("✅ Precio encolado localmente");
+
+      // Opcional: también actualizar estado para mostrarlo de inmediato
+      setPrices((prev) => [
+        ...prev,
+        {
+          materialId, // importante: en UI seguimos usando camelCase
+          price: priceValue,
+          date: new Date().toISOString(),
+        },
+      ]);
       setNewPrice("");
     } catch (err) {
       console.error("❌ Error al guardar precio:", err);
@@ -55,7 +58,6 @@ export default function Prices() {
     }
   };
 
-  // Agrupar y obtener último precio por material
   const latestPricesMap = prices
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .reduce((acc, price) => {
