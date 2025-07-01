@@ -1,111 +1,95 @@
-import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { useState } from "react";
 import { db } from "../lib/db";
-import type { Material } from "../components/RecipeDetails/types";
-import type { Price } from "../lib/db";
-import { toast } from "react-toastify";
+import { formatDate } from "../lib/utils";
+import { AddPriceForm } from "../components/AddPriceForm";
 
 export default function Prices() {
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [prices, setPrices] = useState<Price[]>([]);
-  const [newMaterialId, setNewMaterialId] = useState("");
-  const [newPrice, setNewPrice] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  const fetchData = async () => {
-    try {
-      const localMaterials = await db.materials.toArray();
-      const localPrices = await db.prices.toArray();
+  const prices = useLiveQuery(async () => {
+    const allPrices = await db.prices.orderBy("created_at").reverse().toArray();
+    const latestMap = new Map<string, typeof allPrices[number]>();
 
-      setMaterials(localMaterials);
-      setPrices(localPrices);
-    } catch (err) {
-      console.error("❌ Error al cargar datos locales", err);
+    for (const price of allPrices) {
+      if (!latestMap.has(price.material_id)) {
+        latestMap.set(price.material_id, price);
+      }
     }
-  };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+    const latestPrices = Array.from(latestMap.values());
 
-  const handleAdd = async () => {
-    const priceValue = parseFloat(newPrice);
-    const materialId = parseInt(newMaterialId);
-    if (!materialId || isNaN(priceValue)) return;
-
-    const entry = {
-      materialId,
-      price: priceValue,
-      date: new Date().toISOString(),
-    };
-
-    try {
-      await db.prices.put(entry);
-      await db.pendingMutations.add({
-        type: "create",
-        target: "prices",
-        payload: entry,
-        createdAt: new Date().toISOString(),
-      });
-      toast.success("✅ Precio agregado localmente");
-      setPrices((prev) => [...prev, entry]);
-      setNewPrice("");
-    } catch (err) {
-      console.error("❌ Error al guardar precio:", err);
-      toast.error("❌ Error al guardar");
+    if (search.trim()) {
+      return latestPrices.filter((p) =>
+        p.material_name.toLowerCase().includes(search.toLowerCase())
+      );
     }
-  };
+
+    return latestPrices;
+  }, [search]);
+
+  const priceHistory = useLiveQuery(() => db.prices.orderBy("created_at").reverse().toArray(), []);
 
   return (
-    <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
-      <h1 className="text-2xl font-bold mb-4">Precios</h1>
-
-      <table className="w-full text-sm border border-pink-200 mb-8">
-        <thead className="bg-pink-100">
-          <tr>
-            <th className="text-left p-2">Material</th>
-            <th className="text-left p-2">Fecha</th>
-            <th className="text-left p-2">Precio</th>
-          </tr>
-        </thead>
-        <tbody>
-          {prices.map((price, idx) => {
-            const material = materials.find((m) => m.id === price.materialId);
-            return (
-              <tr key={idx} className="border-t">
-                <td className="p-2">{material ? material.name : "🧩 Desconocido"}</td>
-                <td className="p-2">{new Date(price.date).toLocaleString()}</td>
-                <td className="p-2">${price.price.toFixed(2)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <div className="bg-white p-4 rounded-xl shadow max-w-md mx-auto">
-        <h2 className="font-semibold text-lg mb-3">Agregar nuevo precio</h2>
-        <select
-          value={newMaterialId}
-          onChange={(e) => setNewMaterialId(e.target.value)}
-          className="border rounded px-3 py-2 w-full mb-2"
-        >
-          <option value="">Seleccionar material</option>
-          {materials.map((mat) => (
-            <option key={mat.id} value={mat.id}>
-              {mat.name} ({mat.unit})
-            </option>
-          ))}
-        </select>
+    <div className="flex flex-col h-screen">
+      <div className="p-4">
         <input
-          placeholder="Precio"
-          type="number"
-          value={newPrice}
-          onChange={(e) => setNewPrice(e.target.value)}
-          className="border rounded px-3 py-2 w-full mb-3"
+          type="text"
+          placeholder="Buscar material..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full p-2 border rounded-md"
         />
-        <button
-          onClick={handleAdd}
-          className="w-full bg-pink-500 hover:bg-pink-600 text-white rounded-xl px-4 py-2 font-semibold"
-        >
-          Agregar
-        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 space-y-4">
+        {prices?.map((price) => (
+          <div
+            key={price.id}
+            className="border p-4 rounded-md bg-white shadow"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="font-semibold text-lg">{price.material_name}</div>
+                <div className="text-sm text-gray-500">
+                  Última actualización: {formatDate(price.created_at)}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xl font-bold">${price.amount}</div>
+                <button
+                  onClick={() =>
+                    setExpandedId(expandedId === price.material_id ? null : price.material_id)
+                  }
+                  className="text-blue-500 hover:underline text-sm mt-1"
+                >
+                  {expandedId === price.material_id ? "Ocultar historial" : "Ver historial ▸"}
+                </button>
+              </div>
+            </div>
+
+            {expandedId === price.material_id && (
+              <div className="mt-4 border-t pt-2 space-y-2">
+                {priceHistory
+                  ?.filter((p) => p.material_id === price.material_id)
+                  .map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="flex justify-between text-sm text-gray-700"
+                    >
+                      <span>{formatDate(entry.created_at)}</span>
+                      <span>${entry.amount}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="p-4 border-t bg-white shadow-inner">
+        <AddPriceForm />
       </div>
     </div>
   );
