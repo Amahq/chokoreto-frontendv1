@@ -28,12 +28,21 @@ export async function preloadAppData() {
     ]);
 
     // Validar que los precios tengan la clave compuesta esperada
-    const validPrices: Price[] = prices.filter(
-      (p) =>
-        typeof p.materialId === "number" &&
-        typeof p.date === "string" &&
-        typeof p.price === "number"
-    );
+    // Transformar al formato correcto
+// ...
+
+    const validPrices: Price[] = prices
+      .filter(
+        (p) =>
+          typeof p.material_id === "number" &&
+          typeof p.date === "string" &&
+          typeof p.price === "number"
+      )
+      .map((p) => ({
+        materialId: p.material_id,
+        date: p.date,
+        price: p.price,
+      }));
 
     console.log("Ejemplo de precio válido:", validPrices[0]);
 
@@ -47,6 +56,7 @@ export async function preloadAppData() {
     });
 
     console.log("✅ Precarga completada con éxito");
+
   } catch (err) {
     console.error("❌ Error al precargar datos:", err);
   }
