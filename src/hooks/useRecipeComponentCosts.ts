@@ -23,34 +23,32 @@ export function useRecipeComponentCosts(components: RecipeComponent[], qty: numb
       let total = 0;
       const costs: MaterialCost[] = [];
 
-for (const c of components) {
-  if (c.type !== "material") continue;
+      for (const c of components) {
+        if (c.type !== "material") continue;
 
-  const materialId = c.material?.id ?? c.id;
-  const materialName = c.material?.name ?? c.name;
+        const materialId = c.material?.id ?? c.id;
+        const materialName = c.material?.name ?? c.name;
 
-  if (!materialId) {
-    console.warn("⚠️ Componente de material sin ID:", c);
-    continue;
-  }
+        if (!materialId) {
+          console.warn("❌ Componente inválido, sin ID:", c);
+          continue;
+        }
 
-  const prices = await db.prices.where("materialId").equals(materialId).toArray();
+        const prices = await db.prices.where("materialId").equals(materialId).toArray();
 
-  const latest = prices
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
+        const latest = prices
+          .slice()
+          .sort((a, b) => b.date.localeCompare(a.date))[0];
 
-  if (!latest) {
-    console.warn(`⚠️ No hay precios para ${materialName}`);
-    continue;
-  }
+        if (!latest) {
+          console.warn(`⚠️ No hay precios para ${materialName}`);
+          continue;
+        }
 
-  const cost = latest.price * c.quantity * qty;
-  total += cost;
-  costs.push({ name: materialName, cost });
-}
-
-
+        const cost = latest.price * c.quantity * qty;
+        total += cost;
+        costs.push({ name: materialName, cost });
+      }
 
       if (!cancelled) {
         setMaterialCosts(costs);
