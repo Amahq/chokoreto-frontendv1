@@ -1,62 +1,87 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   RecipeHeader,
   ComponentList,
   AddComponentForm,
   CostCalculator,
-  RecipeMetaPanel,
 } from "../../components/RecipeDetails";
 import { uploadImage } from "../../lib/uploadImage";
-import { updateRecipeLocalFirst, deleteRecipeLocalFirst } from "../../lib/api";
-import RecipeEditForm from "../../components/RecipeDetails/RecipeEditForm";
-import { toast } from "react-toastify";
+import { authFetch, deleteRecipeLocalFirst, updateRecipeLocalFirst } from "../../lib/api";
+import { API_BASE_URL } from "../../lib/config";
 import type {
   RecipeData,
+  MaterialCost,
   Material,
   RecipeRef,
-} from "../../components/RecipeDetails/types";
+} from "../../components/RecipeDetails";
+import { toast } from "react-toastify";
+import { useRecipe } from "../../hooks/useRecipe";
+import RecipeEditForm from "../../components/RecipeDetails/RecipeEditForm";
 
-interface Props {
-  recipe: RecipeData;
-  materials: Material[];
-  recipes: RecipeRef[];
-  navigate: (to: number | string, opts?: { replace?: boolean }) => void;
-}
 
-export default function RecipeDetails({ recipe, materials, recipes, navigate }: Props) {
-  if (!recipe) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-pink-600">
-        Cargando receta...
-      </div>
-    );
-  }
+export default function RecipeDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const { recipe, loading, error } = useRecipe(id ? Number(id) : undefined);
+
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [recipes, setRecipes] = useState<RecipeRef[]>([]);
+
+  const [costQty, setCostQty] = useState("1");
 
   const [editMode, setEditMode] = useState(false);
-  const [editedName, setEditedName] = useState(recipe.name);
-  const [editedYield, setEditedYield] = useState(recipe.yield.toString());
-  const [editedProcedure, setEditedProcedure] = useState(recipe.procedure);
-  const [editedImageUrl, setEditedImageUrl] = useState(recipe.image_url || "");
+  const [editedName, setEditedName] = useState("");
+  const [editedYield, setEditedYield] = useState("");
+  const [editedProcedure, setEditedProcedure] = useState("");
+  const [editedImageUrl, setEditedImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [costQty, setCostQty] = useState("1");
 
   const handleDelete = async () => {
     const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
-    if (!confirmed) return;
+    if (!confirmed || !id) return;
 
     try {
-      await toast.promise(deleteRecipeLocalFirst(recipe.id), {
+      await toast.promise(deleteRecipeLocalFirst(Number(id)), {
         pending: "Eliminando localmente...",
-        success: "🗑️ Receta eliminada",
-        error: "❌ Error al eliminar",
+        success: "🗑️ Receta eliminada (se sincronizará en segundo plano)",
+        error: "❌ Error al eliminar localmente",
       });
       navigate("/recipes", { replace: true });
     } catch (err) {
       console.error(err);
     }
   };
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [mRes, rRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/materials?all=true`),
+          fetch(`${API_BASE_URL}/api/recipes?all=true`),
+        ]);
+        const [mData, rData] = await Promise.all([mRes.json(), rRes.json()]);
+        setMaterials(mData);
+        setRecipes(rData);
+      } catch (err: any) {
+        console.error("Error al cargar los datos: " + err.message);
+      }
+    };
+    fetchAll();
+  }, [id]);
 
-  const handleFileChange = async (file: File) => {
+  useEffect(() => {
+    if (recipe) {
+      setEditedName(recipe.name);
+      setEditedYield(recipe.yield.toString());
+      setEditedProcedure(recipe.procedure);
+      setEditedImageUrl(recipe.image_url || "");
+    }
+  }, [recipe]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setUploading(true);
     try {
       const url = await uploadImage(file);
@@ -71,100 +96,118 @@ export default function RecipeDetails({ recipe, materials, recipes, navigate }: 
 
   return (
     <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
-      <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-md p-6">
-        <RecipeEditForm
-          editMode={editMode}
-          uploading={uploading}
-          recipe={recipe}
-          editedName={editedName}
-          editedYield={editedYield}
-          editedProcedure={editedProcedure}
-          editedImageUrl={editedImageUrl}
-          onNameChange={setEditedName}
-          onYieldChange={setEditedYield}
-          onProcedureChange={setEditedProcedure}
-          onImageChange={handleFileChange}
-          onCancel={() => {
-            setEditMode(false);
-            setEditedName(recipe.name);
-            setEditedYield(recipe.yield.toString());
-            setEditedProcedure(recipe.procedure);
-            setEditedImageUrl(recipe.image_url || "");
-          }}
-        />
+      {loading && <p className="text-center text-pink-600">Cargando...</p>}
+      {error && <p className="text-center text-red-600">{error}</p>}
+      {!loading && recipe && (
+        <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-md p-6">
+          {!editMode && <RecipeHeader recipe={recipe} />}
 
-        {!editMode ? (
-          <button
-            onClick={() => setEditMode(true)}
-            className="text-sm text-blue-500 underline mb-6"
-          >
-            Editar receta
-          </button>
-        ) : (
-          <div className="flex gap-4 mb-6">
+          <RecipeEditForm
+            editMode={editMode}
+            uploading={uploading}
+            recipe={recipe}
+            editedName={editedName}
+            editedYield={editedYield}
+            editedProcedure={editedProcedure}
+            editedImageUrl={editedImageUrl}
+            onNameChange={setEditedName}
+            onYieldChange={setEditedYield}
+            onProcedureChange={setEditedProcedure}
+            onImageChange={handleFileChange}
+            onCancel={() => {
+              setEditMode(false);
+              setEditedName(recipe.name);
+              setEditedYield(recipe.yield.toString());
+              setEditedProcedure(recipe.procedure);
+              setEditedImageUrl(recipe.image_url || "");
+            }}
+          />
+
+          {!editMode ? (
             <button
-              onClick={async () => {
-                const updated = {
-                  ...recipe,
-                  name: editedName,
-                  yield: Number(editedYield),
-                  procedure: editedProcedure,
-                  image_url: editedImageUrl,
-                };
-
-                try {
-                  await toast.promise(updateRecipeLocalFirst(updated), {
-                    pending: "Guardando cambios...",
-                    success: "✅ Cambios guardados",
-                    error: "❌ Error al guardar",
-                  });
-                  setEditMode(false);
-                } catch (err) {
-                  console.error(err);
-                  alert("Error al guardar");
-                }
-              }}
-              className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
+              onClick={() => setEditMode(true)}
+              className="text-sm text-blue-500 underline mb-6"
             >
-              Guardar
+              Editar receta
+            </button>
+          ) : (
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={async () => {
+                  if (!recipe) return;
+
+                  const updated = {
+                    ...recipe,
+                    name: editedName,
+                    yield: Number(editedYield),
+                    procedure: editedProcedure,
+                    image_url: editedImageUrl,
+                  };
+
+                  try {
+                    await toast.promise(updateRecipeLocalFirst(updated), {
+                      pending: "Guardando cambios...",
+                      success: "✅ Cambios guardados localmente",
+                      error: "❌ Error al guardar",
+                    });
+                    setEditMode(false);
+                  } catch (err) {
+                    console.error(err);
+                    alert("Error al guardar los cambios");
+                  }
+                }}
+                className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => {
+                  setEditMode(false);
+                  setEditedName(recipe.name);
+                  setEditedYield(recipe.yield.toString());
+                  setEditedProcedure(recipe.procedure);
+                  setEditedImageUrl(recipe.image_url || "");
+                }}
+                className="text-gray-500 underline"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          <ComponentList
+            recipeId={recipe.id}
+            components={recipe.components}
+            onChange={() => window.location.reload()}
+          />
+          <AddComponentForm
+            recipeId={recipe.id}
+            materials={materials}
+            recipes={recipes}
+            onChange={() => window.location.reload()}
+          />
+          <CostCalculator
+            recipeId={recipe.id}
+            costQty={costQty}
+            setCostQty={setCostQty}
+            components={recipe.components}
+          />
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-pink-600 hover:underline font-medium"
+            >
+              ← Volver
             </button>
             <button
-              onClick={() => {
-                setEditMode(false);
-                setEditedName(recipe.name);
-                setEditedYield(recipe.yield.toString());
-                setEditedProcedure(recipe.procedure);
-                setEditedImageUrl(recipe.image_url || "");
-              }}
-              className="text-gray-500 underline"
+              onClick={handleDelete}
+              className="w-full mt-4 bg-red-100 text-red-600 border border-red-300 rounded-xl px-4 py-2 hover:bg-red-200 font-semibold text-sm"
             >
-              Cancelar
+              Eliminar receta
             </button>
           </div>
-        )}
-
-        <ComponentList
-          recipeId={recipe.id}
-          components={recipe.components}
-          onChange={() => window.location.reload()}
-        />
-        <AddComponentForm
-          recipeId={recipe.id}
-          materials={materials}
-          recipes={recipes}
-          onChange={() => window.location.reload()}
-        />
-        <CostCalculator
-          recipeId={recipe.id}
-          costQty={costQty}
-          setCostQty={setCostQty}
-          components={recipe.components}
-        />
-        <RecipeMetaPanel
-          onDelete={handleDelete}
-          onBack={() => navigate(-1)}
-        />
-      </div>
+        </div>
+      )}
     </div>
   );
 }
