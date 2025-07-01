@@ -63,10 +63,10 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
       <ul className="space-y-2 text-sm">
         {components.filter(Boolean).map((component) => (
           <li
-            key={component.id}
+            key={component.row_id}
             className="bg-pink-100 rounded-xl px-4 py-2 flex items-center justify-between"
           >
-            {editingId === component.id ? (
+            {editingId === component.row_id ? (
               <>
                 <input
                   type="number"
@@ -76,7 +76,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleUpdate(component.id)}
+                    onClick={() => handleUpdate(component.row_id)}
                     className="text-green-600 hover:underline text-xs"
                   >
                     Guardar
@@ -98,7 +98,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      setEditingId(component.id);
+                      setEditingId(component.row_id);
                       setEditedAmount(component.quantity.toString());
                     }}
                     className="text-blue-600 hover:underline text-xs"
@@ -106,7 +106,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
                     Editar
                   </button>
                   <button
-                    onClick={() => handleDelete(component.id)}
+                    onClick={() => handleDelete(component.row_id)}
                     className="text-red-600 hover:underline text-xs"
                   >
                     Eliminar
