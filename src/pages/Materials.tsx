@@ -8,7 +8,7 @@ import {
 import { toast } from "react-toastify";
 
 export default function Materials() {
-  const { materials, loading } = useMaterials();
+  const { materials, loading, refetch } = useMaterials();
   const [localMaterials, setLocalMaterials] = useState(materials);
   const [newName, setNewName] = useState("");
   const [newUnit, setNewUnit] = useState("");
@@ -21,19 +21,18 @@ export default function Materials() {
     try {
       const newMaterial = { id: Date.now(), name: newName, unit: newUnit };
 
-await toast.promise(
-  createMaterialLocalFirst(newMaterial),
-  {
-    pending: "Agregando material...",
-    success: "✅ Guardado localmente",
-    error: "❌ Error al agregar",
-  }
-);
-
-setLocalMaterials((prev) => [...prev, newMaterial]);
+      await toast.promise(
+        createMaterialLocalFirst(newMaterial),
+        {
+          pending: "Agregando material...",
+          success: "✅ Guardado localmente",
+          error: "❌ Error al agregar",
+        }
+      );
 
       setNewName("");
       setNewUnit("");
+      await refetch(); // <- Actualiza desde IndexedDB
     } catch (err) {
       console.error(err);
     }
