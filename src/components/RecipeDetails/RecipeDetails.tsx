@@ -17,6 +17,8 @@ import type {
 } from "../../components/RecipeDetails";
 import { toast } from "react-toastify";
 import { useRecipe } from "../../hooks/useRecipe";
+import RecipeEditForm from "../../components/RecipeDetails/RecipeEditForm";
+
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -28,8 +30,6 @@ export default function RecipeDetails() {
   const [recipes, setRecipes] = useState<RecipeRef[]>([]);
 
   const [costQty, setCostQty] = useState("1");
-  const [materialCosts, setMaterialCosts] = useState<MaterialCost[]>([]);
-  const [totalCost, setTotalCost] = useState<number | null>(null);
 
   const [editMode, setEditMode] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -101,94 +101,80 @@ export default function RecipeDetails() {
       {error && <p className="text-center text-red-600">{error}</p>}
       {!loading && recipe && (
         <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-md p-6">
-          {editMode ? (
-            <>
-              <input
-                className="w-full border rounded px-3 py-1 mb-2"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-              />
-              <input
-                type="number"
-                className="w-full border rounded px-3 py-1 mb-2"
-                value={editedYield}
-                onChange={(e) => setEditedYield(e.target.value)}
-              />
-              <textarea
-                className="w-full border rounded px-3 py-1 mb-2"
-                rows={4}
-                value={editedProcedure}
-                onChange={(e) => setEditedProcedure(e.target.value)}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="w-full mb-2"
-              />
-              {editedImageUrl && (
-                <img
-                  src={editedImageUrl}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-xl mb-4"
-                />
-              )}
-            </>
-          ) : (
-            <RecipeHeader recipe={recipe} />
-          )}
+          <RecipeEditForm
+  editMode={editMode}
+  uploading={uploading}
+  recipe={recipe}
+  editedName={editedName}
+  editedYield={editedYield}
+  editedProcedure={editedProcedure}
+  editedImageUrl={editedImageUrl}
+  onNameChange={setEditedName}
+  onYieldChange={setEditedYield}
+  onProcedureChange={setEditedProcedure}
+  onImageChange={handleFileChange}
+  onCancel={() => {
+    setEditMode(false);
+    setEditedName(recipe.name);
+    setEditedYield(recipe.yield.toString());
+    setEditedProcedure(recipe.procedure);
+    setEditedImageUrl(recipe.image_url || "");
+  }}
+/>
+
 
           {!editMode ? (
-            <button
-              onClick={() => setEditMode(true)}
-              className="text-sm text-blue-500 underline mb-6"
-            >
-              Editar receta
-            </button>
-          ) : (
-            <div className="flex gap-4 mb-6">
-              <button
-                onClick={async () => {
-                  if (!recipe) return;
+  <button
+    onClick={() => setEditMode(true)}
+    className="text-sm text-blue-500 underline mb-6"
+  >
+    Editar receta
+  </button>
+) : (
+  <div className="flex gap-4 mb-6">
+    <button
+      onClick={async () => {
+        if (!recipe) return;
 
-                  const updated = {
-                    ...recipe,
-                    name: editedName,
-                    yield: Number(editedYield),
-                    procedure: editedProcedure,
-                    image_url: editedImageUrl,
-                  };
+        const updated = {
+          ...recipe,
+          name: editedName,
+          yield: Number(editedYield),
+          procedure: editedProcedure,
+          image_url: editedImageUrl,
+        };
 
-                  try {
-                    await toast.promise(updateRecipeLocalFirst(updated), {
-                      pending: "Guardando cambios...",
-                      success: "✅ Cambios guardados localmente",
-                      error: "❌ Error al guardar",
-                    });
-                    setEditMode(false);
-                  } catch (err) {
-                    console.error(err);
-                    alert("Error al guardar los cambios");
-                  }
-                }}
-                className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
-              >
-                Guardar
-              </button>
-              <button
-                onClick={() => {
-                  setEditMode(false);
-                  setEditedName(recipe.name);
-                  setEditedYield(recipe.yield.toString());
-                  setEditedProcedure(recipe.procedure);
-                  setEditedImageUrl(recipe.image_url || "");
-                }}
-                className="text-gray-500 underline"
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
+        try {
+          await toast.promise(updateRecipeLocalFirst(updated), {
+            pending: "Guardando cambios...",
+            success: "✅ Cambios guardados localmente",
+            error: "❌ Error al guardar",
+          });
+          setEditMode(false);
+        } catch (err) {
+          console.error(err);
+          alert("Error al guardar los cambios");
+        }
+      }}
+      className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
+    >
+      Guardar
+    </button>
+    <button
+      onClick={() => {
+        setEditMode(false);
+        setEditedName(recipe.name);
+        setEditedYield(recipe.yield.toString());
+        setEditedProcedure(recipe.procedure);
+        setEditedImageUrl(recipe.image_url || "");
+      }}
+      className="text-gray-500 underline"
+    >
+      Cancelar
+    </button>
+  </div>
+)}
+
 
           <ComponentList
             recipeId={recipe.id}
