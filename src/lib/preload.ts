@@ -14,16 +14,18 @@ export async function preloadAppData() {
       fetch(`${API_BASE_URL}/api/prices?all=true`),
     ]);
 
-    if (!materialsRes.ok || !recipesRes.ok || !pricesRes.ok) {
-      throw new Error("Fallo al precargar datos remotos");
-    }
+    if (!materialsRes.ok)
+      throw new Error(`❌ Falló fetch de materiales: ${materialsRes.status}`);
+    if (!recipesRes.ok)
+      throw new Error(`❌ Falló fetch de recetas: ${recipesRes.status}`);
+    if (!pricesRes.ok)
+      throw new Error(`❌ Falló fetch de precios: ${pricesRes.status}`);
 
-    const [materials, recipes, prices]: [Material[], RecipeData[], Price[]] =
-      await Promise.all([
-        materialsRes.json(),
-        recipesRes.json(),
-        pricesRes.json(),
-      ]);
+    const [materials, recipes, prices] = await Promise.all([
+      materialsRes.json(),
+      recipesRes.json(),
+      pricesRes.json(),
+    ]);
 
     await db.transaction("rw", db.materials, db.recipes, db.prices, async () => {
       await db.materials.clear();
@@ -34,8 +36,9 @@ export async function preloadAppData() {
       await db.prices.bulkPut(prices);
     });
 
-    console.log("Precarga completada con éxito ✅");
+    console.log("✅ Precarga completada con éxito");
   } catch (err) {
     console.error("❌ Error al precargar datos:", err);
   }
 }
+
