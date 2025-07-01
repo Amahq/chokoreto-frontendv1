@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useRecipe } from "../../hooks/useRecipe";
-import { API_BASE_URL } from "../lib/config";
-import type { Material, RecipeRef } from "../components/RecipeDetails/types";
+import { API_BASE_URL } from "../../lib/config";
+import type { Material, RecipeRef } from "./types";
 import RecipeDetails from "./RecipeDetails";
 
 export default function RecipeDetailsContainer() {
