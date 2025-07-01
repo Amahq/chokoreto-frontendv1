@@ -19,14 +19,19 @@ export default function Materials() {
   const handleAdd = async () => {
     if (!newName || !newUnit) return;
     try {
-      await toast.promise(
-        createMaterialLocalFirst({ id: Date.now(), name: newName, unit: newUnit }),
-        {
-          pending: "Agregando material...",
-          success: "✅ Guardado localmente",
-          error: "❌ Error al agregar",
-        }
-      );
+      const newMaterial = { id: Date.now(), name: newName, unit: newUnit };
+
+await toast.promise(
+  createMaterialLocalFirst(newMaterial),
+  {
+    pending: "Agregando material...",
+    success: "✅ Guardado localmente",
+    error: "❌ Error al agregar",
+  }
+);
+
+setLocalMaterials((prev) => [...prev, newMaterial]);
+
       setNewName("");
       setNewUnit("");
     } catch (err) {
