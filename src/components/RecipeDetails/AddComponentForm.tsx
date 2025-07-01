@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Material, RecipeRef } from "./types";
-import { API_BASE_URL } from "../../lib/config";
+import { db } from "../../lib/db";
 
 interface Props {
   recipeId: number;
@@ -33,53 +33,62 @@ export default function AddComponentForm({ recipeId, materials, recipes, onChang
   const handleCreateNewComponent = async () => {
     if (!searchTerm || !recipeId) return;
     try {
-      const url = componentType === "material"
-        ? `${API_BASE_URL}/api/materials`
-        : `${API_BASE_URL}/api/recipes`;
+      const id = Date.now();
+      const newComponent =
+        componentType === "material"
+          ? { id, name: searchTerm, unit: newMaterialUnit }
+          : {
+              id,
+              name: searchTerm,
+              procedure: newRecipeProcedure,
+              yield: Number(newRecipeYield),
+              image_url: "",
+              components: [],
+            };
 
-      const body = componentType === "material"
-        ? { name: searchTerm, unit: newMaterialUnit }
-        : { name: searchTerm, procedure: newRecipeProcedure, yield: Number(newRecipeYield) };
+      const target = componentType === "material" ? "materials" : "recipes";
+      await db[target].put(newComponent);
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+      await db.pendingMutations.add({
+        type: "create",
+        target,
+        payload: newComponent,
+        createdAt: new Date().toISOString(),
       });
 
-      const data = await res.json();
-      if (data.id) {
-        setSelectedComponentId(data.id);
-        setShowNewComponentForm(false);
-        setFilteredOptions([]);
-      }
-    } catch {
-      alert("Error al crear componente nuevo");
+      setSelectedComponentId(id);
+      setShowNewComponentForm(false);
+      setFilteredOptions([]);
+    } catch (err) {
+      alert("Error al crear nuevo componente");
+      console.error(err);
     }
   };
 
   const handleAddComponent = async () => {
     if (!selectedComponentId || !componentQuantity || !recipeId) return;
+
+    const entry = {
+      recipeId,
+      component_type: componentType,
+      component_id: selectedComponentId,
+      quantity: Number(componentQuantity),
+    };
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/components/${recipeId}/components`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          component_type: componentType,
-          component_id: selectedComponentId,
-          quantity: Number(componentQuantity)
-        })
+      await db.pendingMutations.add({
+        type: "create",
+        target: "components",
+        payload: entry,
+        createdAt: new Date().toISOString(),
       });
-      const data = await res.json();
-      if (data.success) {
-        onChange();
-        setSearchTerm("");
-        setComponentQuantity("1");
-      } else {
-        alert("Error: " + data.error);
-      }
-    } catch {
-      alert("Error al agregar componente");
+
+      onChange();
+      setSearchTerm("");
+      setComponentQuantity("1");
+    } catch (err) {
+      alert("❌ Error al guardar componente localmente");
+      console.error(err);
     }
   };
 

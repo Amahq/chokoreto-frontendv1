@@ -40,7 +40,7 @@ export default function CreateRecipe() {
     setMessage("");
 
     const newRecipe: RecipeData = {
-      id: Date.now(), // ID temporal hasta que el backend lo reemplace
+      id: Date.now(), // ID local temporal
       name: form.name,
       procedure: form.procedure,
       yield: parseFloat(form.yield),
@@ -49,20 +49,20 @@ export default function CreateRecipe() {
     };
 
     try {
-      await toast.promise(
+      const realId = await toast.promise(
         createRecipeLocalFirst(newRecipe),
         {
           pending: "Creando receta...",
-          success: "✨ Receta creada (modo local)",
+          success: "✨ Receta creada y sincronizada",
           error: "❌ Error al guardar",
         }
       );
 
-      navigate(`/recipes/${newRecipe.id}`);
+      navigate(`/recipes/${realId}`);
 
       setForm({ name: "", procedure: "", yield: "", image_url: "" });
       setImageFile(null);
-      setMessage("✅ Receta guardada localmente y encolada para sincronización.");
+      setMessage("✅ Receta guardada y sincronizada.");
     } catch (err) {
       console.error(err);
       setMessage("❌ Error inesperado");

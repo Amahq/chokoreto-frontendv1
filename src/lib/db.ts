@@ -1,36 +1,19 @@
-import Dexie, { Table } from 'dexie';
-import type { RecipeData, Material } from "../components/RecipeDetails/types";
+import Dexie from "dexie";
 
-export interface PendingMutation {
-  id?: number;
-  type: 'create' | 'update' | 'delete';
-  target: 'recipes' | 'materials';
-  payload: any;
-  createdAt: string;
-}
+export const db = new Dexie("chokoreto");
 
-export interface Price {
-  materialId: number;
-  date: string; // formato ISO
-  price: number;
-}
-
-class ChokoretoDB extends Dexie {
-  recipes!: Table<RecipeData>;
-  materials!: Table<Material>;
-  pendingMutations!: Table<PendingMutation>;
-  prices!: Table<Price>;
-
-  constructor() {
-    super('chokoreto');
-    this.version(1).stores({
-  recipes: 'id, updatedAt, isDirty',
-  materials: 'id, updatedAt, isDirty',
-  pendingMutations: '++id, target, type, createdAt',
-  prices: '[materialId+date], materialId, date'
+db.version(1).stores({
+  recipes: "id, name",
+  materials: "id, name",
+  prices: "++id, materialId, date",
+  components: "++id, recipeId, component_id", // ← opcional si querés persistirlos
+  pendingMutations: "++id, type, target, createdAt",
+  syncedIds: "[localId+type], localId, remoteId, type",
 });
 
-  }
-}
 
-export const db = new ChokoretoDB();
+export type Price = {
+  materialId: number;
+  price: number;
+  date: string;
+};

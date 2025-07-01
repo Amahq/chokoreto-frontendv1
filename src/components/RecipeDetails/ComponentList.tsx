@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { API_BASE_URL } from "../../lib/config";
-import { authFetch } from "../../lib/api";
+import { db } from "../../lib/db";
 import { toast } from "react-toastify";
 import type { RecipeComponent } from "./types";
 
@@ -11,28 +10,28 @@ interface Props {
 }
 
 export default function ComponentList({ recipeId, components, onChange }: Props) {
-  console.warn("Componentes inválidos:", components.filter((c) => !c));
-
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedAmount, setEditedAmount] = useState("");
 
-  const handleDelete = async (materialId: number) => {
+  const handleDelete = async (componentId: number) => {
     if (!confirm("¿Eliminar este componente?")) return;
 
     try {
-      await toast.promise(
-        authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${materialId}`, {
-          method: "DELETE",
-        }),
-        {
-          pending: "Eliminando...",
-          success: "✅ Componente eliminado",
-          error: "❌ Error al eliminar",
-        }
-      );
+      await db.pendingMutations.add({
+        type: "delete",
+        target: "components",
+        payload: {
+          recipeId,
+          component_id: componentId,
+        },
+        createdAt: new Date().toISOString(),
+      });
+
+      toast.success("🗑️ Eliminado localmente");
       onChange();
     } catch (err) {
       console.error(err);
+      toast.error("❌ Error al eliminar componente");
     }
   };
 
@@ -44,27 +43,23 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
     }
 
     try {
-      const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${component.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await db.pendingMutations.add({
+        type: "update",
+        target: "components",
+        payload: {
+          recipeId,
+          component_id: component.id,
           quantity,
-          component_id: component.id, // ID del material
-        }),
+        },
+        createdAt: new Date().toISOString(),
       });
 
-      if (!res.ok) {
-        console.error("❌ Error al guardar componente", await res.text());
-        toast.error("Error al guardar componente");
-        return;
-      }
-
-      toast.success("✅ Componente actualizado");
+      toast.success("✅ Modificado localmente");
       setEditingId(null);
       onChange();
     } catch (err) {
       console.error(err);
-      toast.error("❌ Error inesperado al guardar");
+      toast.error("❌ Error al guardar componente");
     }
   };
 
