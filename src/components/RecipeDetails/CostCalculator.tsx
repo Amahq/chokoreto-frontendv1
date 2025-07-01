@@ -70,3 +70,5 @@ export function CostCalculator({ recipeId, costQty, setCostQty, components }: Pr
     </div>
   );
 }
+
+export default CostCalculator;
