@@ -1,48 +1,72 @@
 import React from "react";
 import type { MaterialCost } from "./types";
+import { usePrices } from "../../hooks/usePrices";
+import { useEffect, useState } from "react";
+import type { RecipeComponent } from "../../components/RecipeDetails/types";
 
 interface Props {
   recipeId: number;
   costQty: string;
-  setCostQty: (value: string) => void;
-  materialCosts: MaterialCost[];
-  totalCost: number | null;
+  setCostQty: (v: string) => void;
+  components: RecipeComponent[];
 }
 
-export default function CostCalculator({
-  costQty,
-  setCostQty,
-  materialCosts,
-  totalCost
-}: Props) {
+export function CostCalculator({ recipeId, costQty, setCostQty, components }: Props) {
+  const [totalCost, setTotalCost] = useState<number | null>(null);
+  const [materialCosts, setMaterialCosts] = useState<{ name: string; cost: number }[]>([]);
+
+  useEffect(() => {
+    if (!costQty || isNaN(Number(costQty))) return;
+
+    const qty = parseFloat(costQty);
+    let total = 0;
+    const newCosts: { name: string; cost: number }[] = [];
+
+    const calculateCosts = async () => {
+      for (const c of components) {
+        if (c.type !== "material") continue;
+
+        const { prices } = usePrices(c.material.id);
+        const latest = [...prices].sort((a, b) => b.date.localeCompare(a.date))[0];
+
+        if (latest) {
+          const cost = latest.price * c.amount * qty;
+          total += cost;
+          newCosts.push({ name: c.material.name, cost });
+        }
+      }
+      setMaterialCosts(newCosts);
+      setTotalCost(total);
+    };
+
+    calculateCosts();
+  }, [components, costQty]);
+
   return (
-    <div className="border-t pt-4 mt-6">
-      <h2 className="text-lg font-semibold mb-2">Costo total</h2>
-      <div className="mb-2">
-        <label className="text-sm text-pink-600 mr-2">Cantidad deseada:</label>
-        <input
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={costQty}
-          onChange={(e) => setCostQty(e.target.value)}
-          className="border border-pink-300 rounded px-2 py-1 text-sm w-24"
-        />
-      </div>
+    <div className="bg-white p-4 rounded-xl shadow mt-4">
+      <h2 className="text-lg font-semibold mb-2">Costo estimado</h2>
+      <label className="block text-sm font-medium mb-1">Cantidad de producción:</label>
+      <input
+        type="number"
+        value={costQty}
+        onChange={(e) => setCostQty(e.target.value)}
+        className="border rounded px-3 py-2 w-full mb-3"
+        min={1}
+      />
+
       {materialCosts.length > 0 && (
-        <div className="text-sm text-pink-800 space-y-1 mt-2">
-          {materialCosts.map((mat, idx) => (
-            <div key={idx} className="flex justify-between border-b border-pink-100 py-1">
-              <div>{mat.name} ({mat.quantity.toFixed(2)} {mat.unit})</div>
-              <div>${mat.cost.toFixed(2)}</div>
-            </div>
+        <ul className="text-sm text-pink-800 mb-3 space-y-1">
+          {materialCosts.map((m, i) => (
+            <li key={i}>
+              {m.name}: ${m.cost.toFixed(2)}
+            </li>
           ))}
-          <div className="flex justify-between font-bold border-t border-pink-300 pt-2 mt-2">
-            <div>Total</div>
-            <div>${totalCost?.toFixed(2)}</div>
-          </div>
-        </div>
+        </ul>
       )}
+
+      <div className="text-right font-bold text-pink-700">
+        Total: ${totalCost?.toFixed(2) ?? "0.00"}
+      </div>
     </div>
   );
 }
