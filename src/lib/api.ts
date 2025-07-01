@@ -154,16 +154,18 @@ export async function deleteComponentLocalFirst(recipeId: number, componentId: n
 // ---------------------- PRECIOS ----------------------
 
 export async function addPriceLocalFirst(entry: {
-  materialId: number;
+  material_id: number;
   price: number;
-  date: string;
 }) {
-  await db.prices.put(entry);
-
+  // Encolar mutación limpia, sin campos extra
   await db.pendingMutations.add({
     type: "create",
     target: "prices",
-    payload: entry,
+    payload: {
+      material_id: entry.material_id,
+      price: entry.price,
+    },
     createdAt: new Date().toISOString(),
   });
 }
+
