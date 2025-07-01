@@ -27,11 +27,15 @@ export async function preloadAppData() {
       pricesRes.json(),
     ]);
 
-    // Asegurar ID válido en precios
-    const enrichedPrices: Price[] = prices.map((p, idx) => ({
-      id: p.id ?? `${p.materialId}-${p.date ?? idx}`,
-      ...p,
-    }));
+    // Validar que los precios tengan la clave compuesta esperada
+    const validPrices: Price[] = prices.filter(
+      (p) =>
+        typeof p.materialId === "number" &&
+        typeof p.date === "string" &&
+        typeof p.price === "number"
+    );
+
+    console.log("Ejemplo de precio válido:", validPrices[0]);
 
     await db.transaction("rw", db.materials, db.recipes, db.prices, async () => {
       await db.materials.clear();
@@ -39,7 +43,7 @@ export async function preloadAppData() {
       await db.prices.clear();
       await db.materials.bulkPut(materials);
       await db.recipes.bulkPut(recipes);
-      await db.prices.bulkPut(enrichedPrices);
+      await db.prices.bulkPut(validPrices);
     });
 
     console.log("✅ Precarga completada con éxito");
