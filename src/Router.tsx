@@ -6,6 +6,7 @@ import RecipeList from "./pages/RecipeList";
 import RecipeDetails from "./pages/RecipeDetails";
 import Materials from "./pages/Materials";
 import Prices from "./pages/Prices";
+import RecipeDetailsContainer from "./pages/RecipeDetailsContainer"; // asegurate de importar arriba
 
 
 export default function Router() {
@@ -14,7 +15,7 @@ export default function Router() {
       <Route path="/" element={<Home />} />
       <Route path="/recipes" element={<RecipeList />} />
       <Route path="/create" element={<CreateRecipe />} />
-	  <Route path="/recipes/:id" element={<RecipeDetails />} />
+	  <Route path="/recipes/:id" element={<RecipeDetailsContainer />} />
 	  <Route path="/materials" element={<Materials  />} />
 	  <Route path="/prices" element={<Prices  />} />
     </Routes>

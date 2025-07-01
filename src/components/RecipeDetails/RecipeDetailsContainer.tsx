@@ -33,6 +33,8 @@ export default function RecipeDetailsContainer() {
   if (loading) return <p className="text-center text-pink-600">Cargando...</p>;
   if (error || !recipe)
     return <p className="text-center text-red-600">{error || "Receta no encontrada"}</p>;
+console.log("🧪 ID:", id);
+console.log("🔄 useRecipe =>", { recipe, loading, error });
 
   return (
     <RecipeDetails
