@@ -16,12 +16,12 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedAmount, setEditedAmount] = useState("");
 
-  const handleDelete = async (rowId: number) => {
+  const handleDelete = async (materialId: number) => {
     if (!confirm("¿Eliminar este componente?")) return;
 
     try {
       await toast.promise(
-        authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${rowId}`, {
+        authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${materialId}`, {
           method: "DELETE",
         }),
         {
@@ -36,35 +36,37 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
     }
   };
 
-const handleUpdate = async (rowId: number) => {
-  const quantity = parseFloat(editedAmount);
-  if (isNaN(quantity)) {
-    alert("Cantidad inválida");
-    return;
-  }
-
-  try {
-    const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${rowId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity }),
-    });
-
-    if (!res.ok) {
-      console.error("❌ Error al guardar componente", await res.text());
-      toast.error("Error al guardar componente");
+  const handleUpdate = async (component: RecipeComponent) => {
+    const quantity = parseFloat(editedAmount);
+    if (isNaN(quantity)) {
+      alert("Cantidad inválida");
       return;
     }
 
-    toast.success("✅ Componente actualizado");
-    setEditingId(null);
-    onChange();
-  } catch (err) {
-    console.error(err);
-    toast.error("❌ Error inesperado al guardar");
-  }
-};
+    try {
+      const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${component.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quantity,
+          component_id: component.id, // ID del material
+        }),
+      });
 
+      if (!res.ok) {
+        console.error("❌ Error al guardar componente", await res.text());
+        toast.error("Error al guardar componente");
+        return;
+      }
+
+      toast.success("✅ Componente actualizado");
+      setEditingId(null);
+      onChange();
+    } catch (err) {
+      console.error(err);
+      toast.error("❌ Error inesperado al guardar");
+    }
+  };
 
   return (
     <div className="mt-6">
@@ -85,7 +87,7 @@ const handleUpdate = async (rowId: number) => {
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleUpdate(component.row_id)}
+                    onClick={() => handleUpdate(component)}
                     className="text-green-600 hover:underline text-xs"
                   >
                     Guardar
@@ -115,7 +117,7 @@ const handleUpdate = async (rowId: number) => {
                     Editar
                   </button>
                   <button
-                    onClick={() => handleDelete(component.row_id)}
+                    onClick={() => handleDelete(component.id)}
                     className="text-red-600 hover:underline text-xs"
                   >
                     Eliminar
