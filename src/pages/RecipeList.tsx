@@ -1,33 +1,12 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { API_BASE_URL } from "../lib/config";
-
-interface Recipe {
-  id: number;
-  name: string;
-  image_url?: string;
-  yield: number;
-}
+import { useRecipes } from "../hooks/useRecipes";
+import type { RecipeData } from "../components/RecipeDetails/types";
 
 export default function RecipeList() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { recipes, loading } = useRecipes();
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/recipes?all=true`);
-        const data = await res.json();
-        setRecipes(data);
-      } catch (err) {
-        setError("Error al cargar recetas");
-      }
-      setLoading(false);
-    };
-    fetchRecipes();
-  }, []);
 
   return (
     <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
@@ -42,7 +21,7 @@ export default function RecipeList() {
       {error && <p className="text-center text-red-600">{error}</p>}
 
       <div className="grid gap-4 max-w-md mx-auto">
-        {recipes.map((r) => (
+        {recipes.map((r: RecipeData) => (
           <Link
             to={`/recipes/${r.id}`}
             key={r.id}

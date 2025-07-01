@@ -1,63 +1,72 @@
-import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../lib/config";
-
-interface Material {
-  id: number;
-  name: string;
-  unit: string;
-}
+import { useState } from "react";
+import { useMaterials } from "../hooks/useMaterials";
+import {
+  createMaterialLocalFirst,
+  updateMaterialLocalFirst,
+  deleteMaterialLocalFirst
+} from "../lib/api";
+import { toast } from "react-toastify";
 
 export default function Materials() {
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const { materials, loading, refetch } = useMaterials();
+  const [localMaterials, setLocalMaterials] = useState(materials);
   const [newName, setNewName] = useState("");
   const [newUnit, setNewUnit] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const fetchMaterials = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/materials`);
-      const data = await res.json();
-      setMaterials(data);
-    } catch (err) {
-      console.error("Error al cargar materiales", err);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchMaterials();
-  }, []);
+  // Sincronizar cuando cargan
+  if (localMaterials !== materials) setLocalMaterials(materials);
 
   const handleAdd = async () => {
     if (!newName || !newUnit) return;
-    const res = await fetch(`${API_BASE_URL}/api/materials`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName, unit: newUnit }),
-    });
-    if (res.ok) {
+    try {
+      const newMaterial = { id: Date.now(), name: newName, unit: newUnit };
+
+      await toast.promise(
+        createMaterialLocalFirst(newMaterial),
+        {
+          pending: "Agregando material...",
+          success: "✅ Guardado localmente",
+          error: "❌ Error al agregar",
+        }
+      );
+
       setNewName("");
       setNewUnit("");
-      fetchMaterials();
+      await refetch(); // <- Actualiza desde IndexedDB
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleUpdate = async (mat: Material) => {
-    await fetch(`${API_BASE_URL}/api/materials/${mat.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: mat.name, unit: mat.unit }),
-    });
-    fetchMaterials();
+  const handleUpdate = async (mat) => {
+    try {
+      await toast.promise(
+        updateMaterialLocalFirst(mat),
+        {
+          pending: "Guardando...",
+          success: "✅ Guardado localmente",
+          error: "❌ Error al guardar",
+        }
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("¿Eliminar este material?")) return;
-    await fetch(`${API_BASE_URL}/api/materials/${id}`, {
-      method: "DELETE",
-    });
-    fetchMaterials();
+    try {
+      await toast.promise(
+        deleteMaterialLocalFirst(id),
+        {
+          pending: "Eliminando...",
+          success: "✅ Eliminado localmente",
+          error: "❌ Error al eliminar",
+        }
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -76,13 +85,13 @@ export default function Materials() {
             </tr>
           </thead>
           <tbody>
-            {materials.map((mat, idx) => (
-              <tr key={idx} className="border-t">
+            {localMaterials.map((mat) => (
+              <tr key={mat.id} className="border-t">
                 <td className="p-2">
                   <input
                     value={mat.name}
                     onChange={(e) =>
-                      setMaterials((prev) =>
+                      setLocalMaterials((prev) =>
                         prev.map((m) => (m.id === mat.id ? { ...m, name: e.target.value } : m))
                       )
                     }
@@ -93,7 +102,7 @@ export default function Materials() {
                   <input
                     value={mat.unit}
                     onChange={(e) =>
-                      setMaterials((prev) =>
+                      setLocalMaterials((prev) =>
                         prev.map((m) => (m.id === mat.id ? { ...m, unit: e.target.value } : m))
                       )
                     }
