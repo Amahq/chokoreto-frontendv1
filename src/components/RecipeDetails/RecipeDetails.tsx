@@ -6,6 +6,8 @@ import { authFetch } from "../../lib/api";
 import { API_BASE_URL } from "../../lib/config";
 import type { RecipeData, MaterialCost, Material, RecipeRef } from "../../components/RecipeDetails";
 import { toast } from "react-toastify";
+import { deleteRecipeLocalFirst, updateRecipeLocalFirst  } from "../../lib/api";
+
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -44,24 +46,24 @@ export default function RecipeDetails() {
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
-    if (!confirmed || !id) return;
-    try {
-      await toast.promise(
-        authFetch(`${API_BASE_URL}/api/recipes/${id}`, {
-          method: "DELETE",
-        }),
-        {
-          pending: "Eliminando...",
-          success: "🗑️ Receta eliminada",
-          error: "❌ Error al eliminar la receta",
-        }
-      );
-      navigate("/recipes", { replace: true });
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const confirmed = window.confirm("¿Estás seguro de que querés eliminar esta receta?");
+  if (!confirmed || !id) return;
+
+  try {
+    await toast.promise(
+      deleteRecipeLocalFirst(Number(id)),
+      {
+        pending: "Eliminando localmente...",
+        success: "🗑️ Receta eliminada (se sincronizará en segundo plano)",
+        error: "❌ Error al eliminar localmente",
+      }
+    );
+    navigate("/recipes", { replace: true });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -167,23 +169,34 @@ export default function RecipeDetails() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={async () => {
-                  const res = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      name: editedName,
-                      yield: Number(editedYield),
-                      procedure: editedProcedure,
-                      image_url: editedImageUrl
-                    })
-                  });
-                  if (res.ok) {
-                    setEditMode(false);
-                    fetchRecipe();
-                  } else {
-                    alert("Error al guardar los cambios");
-                  }
-                }}
+  if (!recipe) return;
+
+  const updated = {
+    ...recipe,
+    name: editedName,
+    yield: Number(editedYield),
+    procedure: editedProcedure,
+    image_url: editedImageUrl,
+  };
+
+  try {
+    await toast.promise(
+      updateRecipeLocalFirst(updated),
+      {
+        pending: "Guardando cambios...",
+        success: "✅ Cambios guardados localmente",
+        error: "❌ Error al guardar",
+      }
+    );
+    setRecipe(updated);
+    setEditMode(false);
+  } catch (err) {
+    console.error(err);
+    alert("Error al guardar los cambios");
+  }
+}}
+
+
                 className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
               >
                 Guardar
