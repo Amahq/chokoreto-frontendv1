@@ -24,28 +24,30 @@ export function useRecipeComponentCosts(components: RecipeComponent[], qty: numb
       const costs: MaterialCost[] = [];
 
       for (const c of components) {
-        if (c.type !== "material") continue;
+  if (c.type !== "material" || !c.material) {
+    console.warn("⚠️ Componente sin material:", c);
+    continue;
+  }
 
-        const prices = await db.prices
-          .where("materialId")
-          .equals(c.material.id)
-          .toArray();
+  const prices = await db.prices
+    .where("materialId")
+    .equals(c.material.id)
+    .toArray();
 
-        console.log(`🔍 Precios para ${c.material.name} (${c.material.id}):`, prices);
+  const latest = prices
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
 
-        const latest = prices
-          .slice()
-          .sort((a, b) => b.date.localeCompare(a.date))[0];
+  if (!latest) {
+    console.warn(`⚠️ No hay precios para ${c.material.name}`);
+    continue;
+  }
 
-        if (!latest) {
-          console.warn(`⚠️ No hay precios para ${c.material.name}`);
-          continue;
-        }
+  const cost = latest.price * c.amount * qty;
+  total += cost;
+  costs.push({ name: c.material.name, cost });
+}
 
-        const cost = latest.price * c.amount * qty;
-        total += cost;
-        costs.push({ name: c.material.name, cost });
-      }
 
       if (!cancelled) {
         setMaterialCosts(costs);
