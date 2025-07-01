@@ -36,34 +36,35 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
     }
   };
 
-  const handleUpdate = async (rowId: number) => {
-    const amount = parseFloat(editedAmount);
-    if (isNaN(amount)) {
-      alert("Cantidad inválida");
+const handleUpdate = async (rowId: number) => {
+  const quantity = parseFloat(editedAmount);
+  if (isNaN(quantity)) {
+    alert("Cantidad inválida");
+    return;
+  }
+
+  try {
+    const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${rowId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity }),
+    });
+
+    if (!res.ok) {
+      console.error("❌ Error al guardar componente", await res.text());
+      toast.error("Error al guardar componente");
       return;
     }
 
-    try {
-      const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${rowId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
-      });
+    toast.success("✅ Componente actualizado");
+    setEditingId(null);
+    onChange();
+  } catch (err) {
+    console.error(err);
+    toast.error("❌ Error inesperado al guardar");
+  }
+};
 
-      if (!res.ok) {
-        console.error("❌ Error al guardar componente", await res.text());
-        toast.error("Error al guardar componente");
-        return;
-      }
-
-      toast.success("✅ Componente actualizado");
-      setEditingId(null);
-      onChange();
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ Error inesperado al guardar");
-    }
-  };
 
   return (
     <div className="mt-6">
