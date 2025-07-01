@@ -6,7 +6,7 @@ import RecipeList from "./pages/RecipeList";
 import RecipeDetails from "./pages/RecipeDetails";
 import Materials from "./pages/Materials";
 import Prices from "./pages/Prices";
-import RecipeDetailsContainer from "./pages/RecipeDetailsContainer"; // asegurate de importar arriba
+import RecipeDetailsContainer from "./components/RecipeDetails/RecipeDetailsContainer"; // asegurate de importar arriba
 
 
 export default function Router() {
