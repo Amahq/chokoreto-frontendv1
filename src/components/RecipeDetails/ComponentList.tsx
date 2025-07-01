@@ -16,12 +16,12 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedAmount, setEditedAmount] = useState("");
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (rowId: number) => {
     if (!confirm("¿Eliminar este componente?")) return;
 
     try {
       await toast.promise(
-        authFetch(`${API_BASE_URL}/api/components/${recipeId}/${id}`, {
+        authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${rowId}`, {
           method: "DELETE",
         }),
         {
@@ -36,7 +36,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
     }
   };
 
-  const handleUpdate = async (id: number) => {
+  const handleUpdate = async (rowId: number) => {
     const amount = parseFloat(editedAmount);
     if (isNaN(amount)) {
       alert("Cantidad inválida");
@@ -44,7 +44,7 @@ export default function ComponentList({ recipeId, components, onChange }: Props)
     }
 
     try {
-      const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/${id}`, {
+      const res = await authFetch(`${API_BASE_URL}/api/components/${recipeId}/components/${rowId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount }),
