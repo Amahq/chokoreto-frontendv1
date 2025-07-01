@@ -1,152 +1,122 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import type { Component } from "./types";
+import { useState } from "react";
 import { API_BASE_URL } from "../../lib/config";
+import { authFetch } from "../../lib/api";
 import { toast } from "react-toastify";
+import type { RecipeComponent, Material, RecipeRef } from "./types";
 
 interface Props {
   recipeId: number;
-  components: Component[];
+  components: RecipeComponent[];
   onChange: () => void;
 }
 
 export default function ComponentList({ recipeId, components, onChange }: Props) {
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [newQty, setNewQty] = useState<number>(0);
-  const [isProcessing, setIsProcessing] = useState(false);
+  console.warn("Componentes inválidos:", components.filter((c) => !c));
 
-  const handleEdit = (comp: Component) => {
-    setEditingId(comp.id);
-    setNewQty(comp.quantity);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editedAmount, setEditedAmount] = useState("");
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Eliminar este componente?")) return;
+
+    try {
+      await toast.promise(
+        authFetch(`${API_BASE_URL}/api/components/${recipeId}/${id}`, {
+          method: "DELETE",
+        }),
+        {
+          pending: "Eliminando...",
+          success: "✅ Componente eliminado",
+          error: "❌ Error al eliminar",
+        }
+      );
+      onChange();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const saveEdit = async (comp: Component) => {
-    setIsProcessing(true);
+  const handleUpdate = async (id: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity: Number(newQty) })
-      });
-      if (!res.ok) throw new Error("Error al actualizar");
-      toast.success("✅ Componente actualizado");
+      await toast.promise(
+        authFetch(`${API_BASE_URL}/api/components/${recipeId}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: parseFloat(editedAmount) }),
+        }),
+        {
+          pending: "Guardando...",
+          success: "✅ Cantidad actualizada",
+          error: "❌ Error al actualizar",
+        }
+      );
       setEditingId(null);
       onChange();
     } catch (err) {
       console.error(err);
-      toast.error("❌ Error al guardar los cambios");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
-  const handleDelete = async (comp: Component) => {
-    if (!window.confirm(`¿Eliminar ${comp.name}?`)) return;
-    setIsProcessing(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/components/${recipeId}/components/${comp.id}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Error al eliminar");
-      toast.success("🗑️ Componente eliminado");
-      onChange();
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ Error al eliminar el componente");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const renderComponents = (list: Component[]) => {
-    return list.map((comp, index) => {
-      const isEditing = editingId === comp.id;
-      return (
-        <li key={`${comp.type}-${index}`} className="mb-2">
-          <div className="flex justify-between items-center">
-            <div>
-              {comp.type === "material" ? (
-                <>
-                  🧁 <strong>{comp.name}</strong>: {isEditing ? (
-                    <input
-                      type="number"
-                      value={newQty}
-                      onChange={(e) => setNewQty(Number(e.target.value))}
-                      className="border p-1 w-20 mx-2"
-                    />
-                  ) : (
-                    `${comp.quantity} ${comp.unit}`
-                  )}
-                </>
-              ) : (
-                <>
-                  📦 <Link to={`/recipes/${comp.id}`} className="text-pink-600 hover:underline font-semibold">
-                    {comp.name}
-                  </Link> (x{isEditing ? (
-                    <input
-                      type="number"
-                      value={newQty}
-                      onChange={(e) => setNewQty(Number(e.target.value))}
-                      className="border p-1 w-20 mx-2"
-                    />
-                  ) : comp.quantity})
-                </>
-              )}
-            </div>
-            <div className="text-sm flex gap-2">
-              {isEditing ? (
-                <>
+  return (
+    <div className="mt-6">
+      <h3 className="font-bold mb-2 text-pink-800">Componentes</h3>
+      <ul className="space-y-2 text-sm">
+        {components.filter(Boolean).map((component) => (
+          <li
+            key={component.id}
+            className="bg-pink-100 rounded-xl px-4 py-2 flex items-center justify-between"
+          >
+            {editingId === component.id ? (
+              <>
+                <input
+                  type="number"
+                  value={editedAmount}
+                  onChange={(e) => setEditedAmount(e.target.value)}
+                  className="border rounded px-2 py-1 w-24"
+                />
+                <div className="flex gap-2">
                   <button
-                    onClick={() => saveEdit(comp)}
-                    disabled={isProcessing}
-                    className="text-green-600"
+                    onClick={() => handleUpdate(component.id)}
+                    className="text-green-600 hover:underline text-xs"
                   >
                     Guardar
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
-                    disabled={isProcessing}
-                    className="text-gray-500"
+                    className="text-gray-500 hover:underline text-xs"
                   >
                     Cancelar
                   </button>
-                </>
-              ) : (
-                <>
+                </div>
+              </>
+            ) : (
+              <>
+                <span>
+                  {component.name} ({component.unit}):{" "}
+                  <strong>{component.quantity}</strong>
+                </span>
+                <div className="flex gap-2">
                   <button
-                    onClick={() => handleEdit(comp)}
-                    disabled={isProcessing}
-                    className="text-blue-500 underline"
+                    onClick={() => {
+                      setEditingId(component.id);
+                      setEditedAmount(component.quantity.toString());
+                    }}
+                    className="text-blue-600 hover:underline text-xs"
                   >
                     Editar
                   </button>
                   <button
-                    onClick={() => handleDelete(comp)}
-                    disabled={isProcessing}
-                    className="text-red-500 underline"
+                    onClick={() => handleDelete(component.id)}
+                    className="text-red-600 hover:underline text-xs"
                   >
                     Eliminar
                   </button>
-                </>
-              )}
-            </div>
-          </div>
-          {comp.type === "recipe" && comp.components?.length > 0 && (
-            <ul className="ml-4 mt-1 list-disc text-sm text-pink-700">
-              {renderComponents(comp.components)}
-            </ul>
-          )}
-        </li>
-      );
-    });
-  };
-
-  return (
-    <>
-      <h2 className="text-lg font-semibold mb-2">Componentes</h2>
-      <ul className="list-disc ml-4 text-pink-800 mb-6">
-        {renderComponents(components)}
+                </div>
+              </>
+            )}
+          </li>
+        ))}
       </ul>
-    </>
+    </div>
   );
 }
