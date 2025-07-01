@@ -1,11 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { uploadImage } from "../lib/uploadImage";
-import { API_BASE_URL } from "../lib/config";
 import { toast } from "react-toastify";
 import { createRecipeLocalFirst } from "../lib/api";
 import type { RecipeData } from "../components/RecipeDetails/types";
-
 
 export default function CreateRecipe() {
   const [form, setForm] = useState({ name: "", procedure: "", yield: "", image_url: "" });
@@ -14,11 +13,13 @@ export default function CreateRecipe() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleChange = (e) => {
+  const navigate = useNavigate();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
@@ -33,41 +34,42 @@ export default function CreateRecipe() {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-  const newRecipe: RecipeData = {
-    id: Date.now(), // ID temporal hasta que el backend lo reemplace
-    name: form.name,
-    procedure: form.procedure,
-    yield: parseFloat(form.yield),
-    image_url: form.image_url || "",
-    components: []
+    const newRecipe: RecipeData = {
+      id: Date.now(), // ID temporal hasta que el backend lo reemplace
+      name: form.name,
+      procedure: form.procedure,
+      yield: parseFloat(form.yield),
+      image_url: form.image_url || "",
+      components: [],
+    };
+
+    try {
+      await toast.promise(
+        createRecipeLocalFirst(newRecipe),
+        {
+          pending: "Creando receta...",
+          success: "✨ Receta creada (modo local)",
+          error: "❌ Error al guardar",
+        }
+      );
+
+      navigate(`/recipes/${newRecipe.id}`);
+
+      setForm({ name: "", procedure: "", yield: "", image_url: "" });
+      setImageFile(null);
+      setMessage("✅ Receta guardada localmente y encolada para sincronización.");
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Error inesperado");
+    }
+
+    setLoading(false);
   };
-
-  try {
-    await toast.promise(
-      createRecipeLocalFirst(newRecipe),
-      {
-        pending: "Creando receta...",
-        success: "✨ Receta creada (modo local)",
-        error: "❌ Error al guardar",
-      }
-    );
-
-    setForm({ name: "", procedure: "", yield: "", image_url: "" });
-    setImageFile(null);
-    setMessage("✅ Receta guardada localmente y encolada para sincronización.");
-  } catch (err) {
-    console.error(err);
-    setMessage("❌ Error inesperado");
-  }
-
-  setLoading(false);
-};
-
 
   return (
     <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
