@@ -13,7 +13,12 @@ export function useRecipeComponentCosts(components: RecipeComponent[], qty: numb
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const calculate = async () => {
+      console.log("🧮 Calculando costo con qty:", qty);
+      console.log("📦 Componentes:", components);
+
       setLoading(true);
       let total = 0;
       const costs: MaterialCost[] = [];
@@ -24,20 +29,29 @@ export function useRecipeComponentCosts(components: RecipeComponent[], qty: numb
         const prices = await db.prices
           .where("materialId")
           .equals(c.material.id)
-          .sortBy("date");
+          .toArray();
 
-        const latest = prices.reverse()[0]; // más reciente
+        console.log(`🔍 Precios para ${c.material.name} (${c.material.id}):`, prices);
 
-        if (latest) {
-          const cost = latest.price * c.amount * qty;
-          total += cost;
-          costs.push({ name: c.material.name, cost });
+        const latest = prices
+          .slice()
+          .sort((a, b) => b.date.localeCompare(a.date))[0];
+
+        if (!latest) {
+          console.warn(`⚠️ No hay precios para ${c.material.name}`);
+          continue;
         }
+
+        const cost = latest.price * c.amount * qty;
+        total += cost;
+        costs.push({ name: c.material.name, cost });
       }
 
-      setMaterialCosts(costs);
-      setTotalCost(total);
-      setLoading(false);
+      if (!cancelled) {
+        setMaterialCosts(costs);
+        setTotalCost(total);
+        setLoading(false);
+      }
     };
 
     if (qty > 0 && components.length > 0) {
@@ -47,6 +61,10 @@ export function useRecipeComponentCosts(components: RecipeComponent[], qty: numb
       setTotalCost(0);
       setLoading(false);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [components, qty]);
 
   return { materialCosts, totalCost, loading };
