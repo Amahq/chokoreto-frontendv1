@@ -18,6 +18,8 @@ import type {
 import { toast } from "react-toastify";
 import { useRecipe } from "../../hooks/useRecipe";
 import RecipeEditForm from "../../components/RecipeDetails/RecipeEditForm";
+import RecipeMetaPanel from "../../components/RecipeDetails/RecipeMetaPanel";
+
 
 
 export default function RecipeDetails() {
@@ -193,20 +195,11 @@ export default function RecipeDetails() {
             setCostQty={setCostQty}
             components={recipe.components}
           />
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => navigate(-1)}
-              className="text-pink-600 hover:underline font-medium"
-            >
-              ← Volver
-            </button>
-            <button
-              onClick={handleDelete}
-              className="w-full mt-4 bg-red-100 text-red-600 border border-red-300 rounded-xl px-4 py-2 hover:bg-red-200 font-semibold text-sm"
-            >
-              Eliminar receta
-            </button>
-          </div>
+          <RecipeMetaPanel
+  onBack={() => navigate(-1)}
+  onDelete={handleDelete}
+/>
+
         </div>
       )}
     </div>
