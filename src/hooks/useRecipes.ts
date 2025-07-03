@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { db } from "../lib/db";
 import { API_BASE_URL } from "../lib/config";
 import type { RecipeData } from "../components/RecipeDetails/types";
+import { hasPendingMutations } from "../lib/utils";
 
 export function useRecipes() {
   const [recipes, setRecipes] = useState<RecipeData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar recetas locales primero
   useEffect(() => {
     const loadLocal = async () => {
       const localRecipes = await db.recipes.toArray();
@@ -16,6 +16,12 @@ export function useRecipes() {
     };
 
     const syncRemote = async () => {
+      const pending = await hasPendingMutations();
+      if (pending) {
+        console.log("⏭️ Saltando sincronización de recetas: hay mutaciones pendientes");
+        return;
+      }
+
       try {
         const res = await fetch(`${API_BASE_URL}/api/recipes`);
         if (!res.ok) return;
@@ -25,7 +31,7 @@ export function useRecipes() {
         await db.recipes.clear();
         await db.recipes.bulkPut(data);
       } catch (err) {
-        console.error("Error syncing recipes:", err);
+        console.error("❌ Error sincronizando recetas:", err);
       }
     };
 

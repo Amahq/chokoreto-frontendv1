@@ -1,18 +1,29 @@
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useRecipes } from "../hooks/useRecipes";
 import type { RecipeData } from "../components/RecipeDetails/types";
+import { hasPendingMutations } from "../lib/utils";
 
 export default function RecipeList() {
   const { recipes, loading } = useRecipes();
   const [error, setError] = useState("");
+  const [syncPending, setSyncPending] = useState(false);
+
+  useEffect(() => {
+    hasPendingMutations().then(setSyncPending);
+  }, []);
 
   return (
     <div className="min-h-screen bg-pink-50 text-pink-900 font-sans px-4 py-6">
-      <header className="flex items-center justify-center mb-6">
+      <header className="flex items-center justify-center mb-6 relative">
         <img src="/capybara-mascot.png" alt="Capibara Chokoreto" className="w-14 h-14 mr-2" />
         <h1 className="text-3xl font-bold text-pink-600">Chokoreto</h1>
+        {syncPending && (
+          <div className="absolute right-4 top-0 flex items-center text-xs text-pink-500">
+            <Clock className="w-4 h-4 mr-1" /> Cambios pendientes
+          </div>
+        )}
       </header>
 
       <h2 className="text-xl font-semibold text-center mb-4">Lista de recetas</h2>

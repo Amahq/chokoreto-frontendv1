@@ -4,6 +4,7 @@ import { useRecipe } from "../../hooks/useRecipe";
 import { API_BASE_URL } from "../../lib/config";
 import type { Material, RecipeRef } from "./types";
 import RecipeDetails from "./RecipeDetails";
+import { hasPendingMutations } from "../../lib/utils";
 
 export default function RecipeDetailsContainer() {
   const { id } = useParams();
@@ -15,6 +16,12 @@ export default function RecipeDetailsContainer() {
 
   useEffect(() => {
     const fetchAll = async () => {
+      const pending = await hasPendingMutations();
+      if (pending) {
+        console.log("⏭️ Saltando fetch en RecipeDetailsContainer: hay mutaciones pendientes");
+        return;
+      }
+
       try {
         const [mRes, rRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/materials?all=true`),
@@ -33,8 +40,9 @@ export default function RecipeDetailsContainer() {
   if (loading) return <p className="text-center text-pink-600">Cargando...</p>;
   if (error || !recipe)
     return <p className="text-center text-red-600">{error || "Receta no encontrada"}</p>;
-console.log("🧪 ID:", id);
-console.log("🔄 useRecipe =>", { recipe, loading, error });
+
+  console.log("🧪 ID:", id);
+  console.log("🔄 useRecipe =>", { recipe, loading, error });
 
   return (
     <RecipeDetails

@@ -1,5 +1,7 @@
 import { db } from "./db";
 import { API_BASE_URL } from "./config";
+import { preloadAppData } from "./preload";
+import { hasPendingMutations } from "./utils";
 
 type Mutation = {
   id?: number;
@@ -153,5 +155,12 @@ export async function trySyncPendingMutations() {
     } catch (err) {
       console.error("❌ Error sincronizando mutación:", mutation, err);
     }
+  }
+
+  // Si ya no hay mutaciones pendientes, actualizamos desde backend
+  const stillPending = await hasPendingMutations();
+  if (!stillPending) {
+    console.log("✅ Todas las mutaciones sincronizadas, refrescando datos...");
+    await preloadAppData();
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../lib/db";
 import { API_BASE_URL } from "../lib/config";
+import { hasPendingMutations } from "../lib/utils";
 import type { RecipeData } from "../components/RecipeDetails/types";
 
 export function useRecipe(id: number | undefined) {
@@ -17,6 +18,13 @@ export function useRecipe(id: number | undefined) {
     };
 
     const syncRemote = async () => {
+      const pending = await hasPendingMutations();
+      if (pending) {
+        console.log("⏭️ Saltando sincronización de receta: hay mutaciones pendientes");
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`${API_BASE_URL}/api/recipes/${id}`);
         if (res.status === 404) {

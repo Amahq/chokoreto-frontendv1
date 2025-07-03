@@ -3,9 +3,16 @@ import { API_BASE_URL } from "./config";
 import type { Material } from "../components/RecipeDetails/types";
 import type { RecipeData } from "../components/RecipeDetails/types";
 import type { Price } from "./db";
+import { hasPendingMutations } from "./utils";
 
 export async function preloadAppData() {
-  console.log("Precargando datos...");
+  const shouldSkip = await hasPendingMutations();
+  if (shouldSkip) {
+    console.log("⏭️ Precarga omitida: hay mutaciones pendientes");
+    return;
+  }
+
+  console.log("🔄 Precargando datos...");
 
   try {
     const [materialsRes, recipesRes, pricesRes] = await Promise.all([
@@ -26,10 +33,6 @@ export async function preloadAppData() {
       recipesRes.json(),
       pricesRes.json(),
     ]);
-
-    // Validar que los precios tengan la clave compuesta esperada
-    // Transformar al formato correcto
-// ...
 
     const validPrices: Price[] = prices
       .filter(

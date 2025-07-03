@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../lib/db";
 import { API_BASE_URL } from "../lib/config";
+import { hasPendingMutations } from "../lib/utils";
 import type { Price } from "../lib/db";
 
 export function usePrices(materialId: number) {
@@ -14,17 +15,23 @@ export function usePrices(materialId: number) {
   };
 
   const syncRemote = async () => {
+    const pending = await hasPendingMutations();
+    if (pending) {
+      console.log("⏭️ Saltando sincronización de precios: hay mutaciones pendientes");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/prices/${materialId}`);
       if (!res.ok) return;
 
       const data: Price[] = await res.json();
-      // eliminamos todos los precios locales de ese material y los reemplazamos
+
       await db.prices.where("materialId").equals(materialId).delete();
       await db.prices.bulkPut(data);
       loadLocalPrices();
     } catch (err) {
-      console.error("Error syncing prices:", err);
+      console.error("❌ Error sincronizando precios:", err);
     }
   };
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMaterials } from "../hooks/useMaterials";
 import {
   createMaterialLocalFirst,
@@ -6,6 +6,7 @@ import {
   deleteMaterialLocalFirst
 } from "../lib/api";
 import { toast } from "react-toastify";
+import { hasPendingMutations } from "../lib/utils";
 
 export default function Materials() {
   const { materials, loading, refetch } = useMaterials();
@@ -13,8 +14,10 @@ export default function Materials() {
   const [newName, setNewName] = useState("");
   const [newUnit, setNewUnit] = useState("");
 
-  // Sincronizar cuando cargan
-  if (localMaterials !== materials) setLocalMaterials(materials);
+  // Sincronizar con materiales cuando se actualizan
+  useEffect(() => {
+    setLocalMaterials(materials);
+  }, [materials]);
 
   const handleAdd = async () => {
     if (!newName || !newUnit) return;
@@ -32,7 +35,10 @@ export default function Materials() {
 
       setNewName("");
       setNewUnit("");
-      await refetch(); // <- Actualiza desde IndexedDB
+
+      const hasPending = await hasPendingMutations();
+      if (!hasPending) await refetch(); // solo refrescar si no hay mutaciones pendientes
+
     } catch (err) {
       console.error(err);
     }
